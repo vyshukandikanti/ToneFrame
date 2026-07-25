@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "DubVerse AI"
+version = "1.0.0"
+id = "artifacts/dubverse-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24276
+
+[services.development]
+run = "pnpm --filter @workspace/dubverse-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/dubverse-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/dubverse-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24276"
+BASE_PATH = "/"

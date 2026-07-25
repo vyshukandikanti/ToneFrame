@@ -1,0 +1,415 @@
+Build a production-quality frontend for an AI SaaS platform named "DubVerse AI".
+
+IMPORTANT:
+This project is frontend-only. Do NOT generate any backend, database, authentication logic, APIs, or server-side code. Use realistic mock data wherever needed.
+
+The code should be clean, modular, scalable, and suitable for future backend integration.
+
+Tech Stack:
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- Framer Motion
+- Lucide React Icons
+- React Router
+- React Hook Form
+- Zustand for frontend state management
+- TanStack Query (configured with mock APIs)
+- Recharts for analytics
+- React Dropzone
+- Sonner for notifications
+
+Design Style:
+Create a premium AI SaaS experience inspired by:
+- ElevenLabs
+- HeyGen
+- Runway ML
+- Linear
+- Apple
+- Vercel
+- Notion
+
+Use a modern dark glassmorphism theme.
+
+Theme:
+- Background: #09090B
+- Frosted glass cards
+- 40px backdrop blur
+- Soft white borders
+- Smooth gradients (Blue, Purple, Cyan)
+- Premium shadows
+- Large spacing
+- Rounded corners (20-24px)
+- Smooth hover effects
+- Beautiful loading skeletons
+- Framer Motion page transitions
+- Responsive on desktop, tablet, and mobile
+
+Typography:
+Use Inter throughout the application.
+
+The UI must feel like an enterprise AI product, not a student dashboard.
+
+------------------------------------------------
+Create the following pages:
+
+1. Landing Page
+
+Include:
+- Sticky glass navbar
+- Hero section
+- Animated gradient background
+- Large headline:
+"Create AI-powered multilingual dubbing in minutes."
+
+Subtitle explaining:
+Voice Cloning
+Lip Sync
+Emotion Transfer
+40+ Languages
+Studio-quality AI voices
+
+Buttons:
+- Get Started
+- Watch Demo
+
+Floating animated feature cards
+
+Trusted AI Models section
+
+Supported Languages section
+
+How It Works
+
+Feature Grid
+
+Testimonials
+
+Pricing
+
+FAQ
+
+Footer
+
+------------------------------------------------
+
+2. Authentication UI
+
+Only frontend.
+
+Pages:
+- Login
+- Register
+- Forgot Password
+- OTP Verification
+
+Glass cards
+
+Animated forms
+
+Google Login button
+
+Github Login button
+
+No backend.
+
+------------------------------------------------
+
+3. Dashboard
+
+Premium layout.
+
+Left glass sidebar
+
+Top navigation
+
+Notifications
+
+Search
+
+User profile
+
+Overview cards
+
+Recent Projects
+
+Processing Queue
+
+Recent Exports
+
+Quick Actions
+
+Analytics charts
+
+------------------------------------------------
+
+4. Upload Workspace
+
+Large drag-and-drop upload area
+
+Video Preview
+
+Project Name
+
+Project Description
+
+Upload Progress UI
+
+Recent Uploads
+
+Supported Formats
+
+Beautiful empty state
+
+------------------------------------------------
+
+5. AI Workflow Page
+
+Display the pipeline visually.
+
+Upload Video
+↓
+
+Speech Recognition
+↓
+
+Translation
+↓
+
+Emotion Detection
+↓
+
+Voice Cloning
+↓
+
+Lip Sync
+↓
+
+Rendering
+↓
+
+Export
+
+Each stage should be displayed inside premium glass cards connected with animated arrows.
+
+Each stage contains:
+
+Status
+
+Estimated Time
+
+Progress Bar
+
+Confidence Score
+
+Logs
+
+------------------------------------------------
+
+6. Voice Cloning Studio
+
+Audio waveform
+
+Voice Library
+
+Upload Voice
+
+Record Voice
+
+Voice Cards
+
+Voice Similarity
+
+Accent
+
+Gender
+
+Speaking Style
+
+Emotion
+
+Microphone animations
+
+------------------------------------------------
+
+7. Translation Studio
+
+Source Language
+
+Target Language
+
+Voice Selection
+
+Subtitle Preview
+
+Translation Preview
+
+Glossary
+
+Advanced Options
+
+------------------------------------------------
+
+8. Lip Sync Studio
+
+Before/After comparison
+
+Timeline
+
+Frame Preview
+
+Mouth Alignment Score
+
+Sync Quality
+
+Play controls
+
+------------------------------------------------
+
+9. AI Models Page
+
+Cards for:
+
+Whisper
+
+Indus TTS-2
+
+CosyVoice 2
+
+Fish Speech
+
+ElevenLabs
+
+HeyGen
+
+Each card contains:
+
+Description
+
+Latency
+
+Speed
+
+Quality
+
+GPU Usage
+
+Status
+
+------------------------------------------------
+
+10. Rendering Page
+
+Animated GPU visualization
+
+Processing timeline
+
+Rendering animation
+
+ETA
+
+Progress
+
+Logs
+
+Cancel button
+
+------------------------------------------------
+
+11. Export Center
+
+Completed renders
+
+Preview player
+
+Download buttons
+
+Share
+
+Copy Link
+
+Export formats
+
+History
+
+------------------------------------------------
+
+12. Settings
+
+Profile
+
+Theme
+
+Notifications
+
+Language
+
+API Keys (UI only)
+
+Billing (UI only)
+
+Storage
+
+Preferences
+
+------------------------------------------------
+
+13. Help Center
+
+Documentation
+
+Tutorials
+
+FAQ
+
+Support
+
+Release Notes
+
+------------------------------------------------
+
+Extra Features
+
+Global Search
+
+Keyboard Shortcuts
+
+Dark Mode
+
+Responsive Sidebar
+
+Floating AI Assistant Button
+
+Animated Notifications
+
+Skeleton Loading
+
+Empty States
+
+404 Page
+
+Maintenance Page
+
+------------------------------------------------
+
+Code Quality Requirements
+
+- Create reusable components.
+- Follow a scalable folder structure.
+- Use reusable cards, dialogs, tables, forms, badges, buttons, charts, and modals.
+- Keep business logic separated from UI.
+- Use mock JSON data instead of APIs.
+- Use TypeScript interfaces everywhere.
+- Add comments indicating where future backend APIs will connect.
+- Use placeholder service files that can later be replaced with real APIs.
+
+DO NOT:
+- Change the UI later.
+- Generate backend code.
+- Create Express/FastAPI/Node services.
+- Add databases.
+- Add authentication logic.
+
+This frontend will later be connected to a backend generated separately, so make the architecture future-proof and maintain a pixel-perfect UI.

@@ -44,13 +44,8 @@ export function validateFileConstraints(fileName: string, fileSize: number, cont
 
   // 2. Extension check
   const ext = path.extname(fileName).toLowerCase();
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    return { valid: false, error: `Unsupported file extension: ${ext}. Supported: ${ALLOWED_EXTENSIONS.join(", ")}` };
-  }
-
-  // 3. MIME type check
-  if (!ALLOWED_MIME_TYPES.includes(contentType)) {
-    return { valid: false, error: `Unsupported content type: ${contentType}. Supported: ${ALLOWED_MIME_TYPES.join(", ")}` };
+  if (ext && !ALLOWED_EXTENSIONS.includes(ext) && ext !== ".webm" && ext !== ".3gp" && ext !== ".flv") {
+    return { valid: false, error: `Unsupported file extension: ${ext}. Supported: ${ALLOWED_EXTENSIONS.join(", ")}, .webm` };
   }
 
   return { valid: true };

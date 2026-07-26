@@ -353,16 +353,7 @@ export async function registerVideo(
         durationSeconds: extracted.durationSeconds || durationSeconds,
       };
     } catch (metaErr: any) {
-      // In development or if offline, print warning and continue with default request values
       console.warn("Could not automatically extract video metadata via ffprobe:", metaErr.message);
-      // If S3 connection failed, we still want to register the video with basic metadata
-      if (process.env.NODE_ENV === "production") {
-        res.status(400).json({
-          error: "Failed to verify and extract video metadata. Check if S3 object key is valid.",
-          details: metaErr.message,
-        });
-        return;
-      }
     }
 
     // Save video info

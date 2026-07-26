@@ -107,12 +107,72 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
   const [pipelineStatus, setPipelineStatus] = useState<Record<string, string>>({});
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Sync video and audio tracks
+  useEffect(() => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (!video) return;
+
+    if (activeAudioTrack === "dubbed" && dubbedAudioUrl) {
+      video.muted = true;
+      if (audio) {
+        audio.currentTime = video.currentTime;
+        if (!video.paused) {
+          audio.play().catch(() => {});
+        } else {
+          audio.pause();
+        }
+      }
+    } else {
+      video.muted = false;
+      if (audio) {
+        audio.pause();
+      }
+    }
+  }, [activeAudioTrack, dubbedAudioUrl]);
+
+  // Video element event listeners for play, pause, seek
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      if (activeAudioTrack === "dubbed" && audioRef.current) {
+        audioRef.current.currentTime = video.currentTime;
+        audioRef.current.play().catch(() => {});
+      }
+    };
+
+    const handlePause = () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+
+    const handleSeek = () => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = video.currentTime;
+      }
+    };
+
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+    video.addEventListener("seeking", handleSeek);
+    video.addEventListener("seeked", handleSeek);
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("seeking", handleSeek);
+      video.removeEventListener("seeked", handleSeek);
+    };
+  }, [activeAudioTrack]);
 
   // 3. Socket.io Real-time integration
   useEffect(() => {
-    const socketHost = window.location.origin.includes("localhost")
-      ? "http://localhost:5000"
-      : window.location.origin;
+    const socketHost = import.meta.env.VITE_API_URL || "https://dubverse-backend-production.up.railway.app";
 
     logger("Connecting to Socket.io server at " + socketHost);
     const socket: Socket = io(socketHost, {
@@ -521,6 +581,13 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                   controls
                   className="w-full h-full object-contain"
                 />
+                {dubbedAudioUrl && (
+                  <audio
+                    ref={audioRef}
+                    src={dubbedAudioUrl}
+                    preload="auto"
+                  />
+                )}
 
                 {/* Subtitle Display Overlay (if toggled and audio dubbed) */}
                 {activeAudioTrack === "dubbed" && hasSubtitles && (

@@ -545,9 +545,13 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                       </Button>
                       <Button
                         variant={activeAudioTrack === "dubbed" ? "default" : "ghost"}
-                        disabled={!dubbedAudioUrl}
-                        onClick={() => setActiveAudioTrack("dubbed")}
-                        className={`rounded-lg py-2 text-[12px] ${activeAudioTrack === "dubbed" ? "bg-white/10 hover:bg-white/10 text-white" : "text-white/40 hover:text-white"}`}
+                        onClick={() => {
+                          if (!dubbedAudioUrl) {
+                            toast.info("Dubbed track will activate once Voice Cloning & TTS generates the audio file.");
+                          }
+                          setActiveAudioTrack("dubbed");
+                        }}
+                        className={`rounded-lg py-2 text-[12px] cursor-pointer ${activeAudioTrack === "dubbed" ? "bg-violet-600/30 text-white border border-violet-500/30" : "text-white/70 hover:text-white"}`}
                       >
                         <Volume2 className="w-3.5 h-3.5 mr-1.5" /> Dubbed
                       </Button>
@@ -560,23 +564,31 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                       <Button
                         variant={activeVideoTrack === "original" ? "default" : "ghost"}
                         onClick={() => setActiveVideoTrack("original")}
-                        className={`rounded-lg py-1 px-2 text-[10px] ${activeVideoTrack === "original" ? "bg-white/10 text-white" : "text-white/40"}`}
+                        className={`rounded-lg py-1 px-2 text-[10px] cursor-pointer ${activeVideoTrack === "original" ? "bg-white/10 text-white" : "text-white/40"}`}
                       >
                         Original
                       </Button>
                       <Button
                         variant={activeVideoTrack === "lipsynced" ? "default" : "ghost"}
-                        disabled={lipsyncAssets.length === 0}
-                        onClick={() => setActiveVideoTrack("lipsynced")}
-                        className={`rounded-lg py-1 px-2 text-[10px] ${activeVideoTrack === "lipsynced" ? "bg-white/10 text-white" : "text-white/40"}`}
+                        onClick={() => {
+                          if (lipsyncAssets.length === 0) {
+                            toast.info("Lip synced track will activate once AI Lip Sync completes.");
+                          }
+                          setActiveVideoTrack("lipsynced");
+                        }}
+                        className={`rounded-lg py-1 px-2 text-[10px] cursor-pointer ${activeVideoTrack === "lipsynced" ? "bg-violet-600/30 text-white border border-violet-500/30" : "text-white/70"}`}
                       >
                         Lip Synced
                       </Button>
                       <Button
                         variant={activeVideoTrack === "rendered" ? "default" : "ghost"}
-                        disabled={renderedAssets.length === 0}
-                        onClick={() => setActiveVideoTrack("rendered")}
-                        className={`rounded-lg py-1 px-2 text-[10px] ${activeVideoTrack === "rendered" ? "bg-white/10 text-white" : "text-white/40"}`}
+                        onClick={() => {
+                          if (renderedAssets.length === 0) {
+                            toast.info("Rendered track will activate once Video Rendering completes.");
+                          }
+                          setActiveVideoTrack("rendered");
+                        }}
+                        className={`rounded-lg py-1 px-2 text-[10px] cursor-pointer ${activeVideoTrack === "rendered" ? "bg-violet-600/30 text-white border border-violet-500/30" : "text-white/70"}`}
                       >
                         Rendered
                       </Button>

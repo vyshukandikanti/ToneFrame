@@ -127,22 +127,35 @@ export async function getProject(
       .where(eq(uploadedVideosTable.projectId, projectId))
       .orderBy(desc(uploadedVideosTable.createdAt));
 
-    const formattedVideos = videos.map((v) => ({
-      id: v.id,
-      projectId: v.projectId,
-      fileName: v.fileName,
-      s3Key: v.s3Key,
-      durationSeconds: v.durationSeconds,
-      fileSize: v.fileSize,
-      resolution: v.resolution || "unknown",
-      mimeType: v.mimeType,
-      width: v.width || undefined,
-      height: v.height || undefined,
-      fps: v.fps || undefined,
-      codec: v.codec || undefined,
-      bitrate: v.bitrate || undefined,
-      createdAt: v.createdAt.toISOString(),
-    }));
+    const formattedVideos = await Promise.all(
+      videos.map(async (v) => {
+        let downloadUrl = v.s3Key;
+        if (v.s3Key && !v.s3Key.startsWith("http://") && !v.s3Key.startsWith("https://")) {
+          try {
+            downloadUrl = await generatePresignedDownloadUrl(v.s3Key);
+          } catch (err) {
+            console.warn("Could not generate presigned download URL:", err);
+          }
+        }
+        return {
+          id: v.id,
+          projectId: v.projectId,
+          fileName: v.fileName,
+          s3Key: v.s3Key,
+          downloadUrl,
+          durationSeconds: v.durationSeconds,
+          fileSize: v.fileSize,
+          resolution: v.resolution || "unknown",
+          mimeType: v.mimeType,
+          width: v.width || undefined,
+          height: v.height || undefined,
+          fps: v.fps || undefined,
+          codec: v.codec || undefined,
+          bitrate: v.bitrate || undefined,
+          createdAt: v.createdAt.toISOString(),
+        };
+      })
+    );
 
     res.status(200).json({
       id: project.id,

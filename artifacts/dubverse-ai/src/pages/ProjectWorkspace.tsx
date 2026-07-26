@@ -485,7 +485,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
   const currentVideo = localVideo || (project?.videos && project.videos.length > 0 ? project.videos[0] : null);
 
   // Resolve active sources
-  const originalVideoUrl = currentVideo ? currentVideo.s3Key : "";
+  const originalVideoUrl = currentVideo ? (currentVideo.downloadUrl || currentVideo.s3Key) : "";
   const lipsyncedVideoUrl = lipsyncAssets.length > 0 ? lipsyncAssets[0].downloadUrl : "";
   const renderedVideoUrl = renderedAssets.length > 0 ? renderedAssets[0].downloadUrl : "";
 

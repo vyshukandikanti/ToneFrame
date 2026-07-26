@@ -7,9 +7,11 @@ import AuthPage from '@/pages/AuthPage';
 import Dashboard from '@/pages/Dashboard';
 import ProjectWorkspace from '@/pages/ProjectWorkspace';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
-import { setAuthTokenGetter } from '@workspace/api-client-react';
+import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 
-// Setup authentication token getter on initial bundle execution
+// Setup API Base URL and authentication token getter on initial bundle execution
+const apiBaseUrl = import.meta.env.VITE_API_URL || "https://dubverse-backend-production.up.railway.app";
+setBaseUrl(apiBaseUrl);
 setAuthTokenGetter(() => localStorage.getItem("token"));
 
 const queryClient = new QueryClient();

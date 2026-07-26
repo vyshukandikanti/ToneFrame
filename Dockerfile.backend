@@ -1,0 +1,46 @@
+# --- Build Stage ---
+FROM node:20-alpine AS builder
+
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copy workspace manifest and lockfile
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+
+# Copy packages
+COPY lib/ ./lib/
+COPY artifacts/api-server/ ./artifacts/api-server/
+
+# Install dependencies including devDependencies for build
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Build backend
+RUN pnpm --filter @workspace/api-server run build
+
+# --- Runtime Stage ---
+FROM node:20-alpine
+
+RUN apk add --no-cache ffmpeg curl
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN npm install -g pnpm
+
+# Copy files needed from builder
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY lib/ ./lib/
+COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
+COPY --from=builder /app/artifacts/api-server/package.json ./artifacts/api-server/
+
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:5000/api/health || exit 1
+
+WORKDIR /app/artifacts/api-server
+CMD ["node", "--enable-source-maps", "./dist/index.mjs"]

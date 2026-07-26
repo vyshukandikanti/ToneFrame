@@ -1,50 +1,82 @@
 import { motion } from 'framer-motion';
-import { TESTIMONIALS } from '@/lib/mock-data/landing';
-import { Star } from 'lucide-react';
+
+const TESTIMONIALS = [
+  {
+    quote: "DubVerse AI cut our localization time from weeks to hours. The lip-sync is indistinguishable from human dubbing. An essential part of our international release pipeline.",
+    name: 'Sarah Jenkins',
+    role: 'Post-Production Lead',
+    company: 'Nexus Studios',
+    initials: 'SJ',
+  },
+  {
+    quote: "I launch my channel in Spanish, Japanese, and Hindi simultaneously. The emotion transfer means my jokes land in every single language. Nothing else comes close.",
+    name: 'David Chen',
+    role: 'Content Creator',
+    company: '10M+ Subscribers',
+    initials: 'DC',
+  },
+  {
+    quote: "We were skeptical about AI voices for dramatic scenes. DubVerse captures the whisper, the breath, the intensity. It's become our production standard.",
+    name: 'Elena Rostova',
+    role: 'Director',
+    company: 'Aura Films',
+    initials: 'ER',
+  },
+];
 
 export function Testimonials() {
   return (
-    <section className="py-24 relative bg-black/60 border-y border-white/5">
-      <div className="container mx-auto px-6 max-w-7xl">
-        <div className="text-center mb-16">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl md:text-5xl font-bold tracking-tight text-white"
-          >
-            Trusted by top studios.
-          </motion.h2>
-        </div>
+    <section className="py-28 relative overflow-hidden bg-[#06060b]">
+      <div className="mx-auto px-8 max-w-7xl">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((testimonial, i) => (
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mb-16"
+        >
+          <p className="text-[10px] font-medium tracking-[0.28em] uppercase text-white/28 mb-5">
+            Testimonials
+          </p>
+          <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-bold tracking-[-0.03em] leading-[1.1] text-white">
+            Trusted by top studios.
+          </h2>
+        </motion.div>
+
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {TESTIMONIALS.map((t, i) => (
             <motion.div
-              key={testimonial.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              key={t.name}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="glass p-8 rounded-3xl flex flex-col justify-between hover:border-white/10 transition-colors"
+              transition={{ duration: 0.7, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+              className="luxury-card rounded-2xl p-8 flex flex-col justify-between group relative overflow-hidden"
             >
-              <div>
-                <div className="flex gap-1 mb-6">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-purple-500 text-purple-500" />
-                  ))}
-                </div>
-                <p className="text-lg text-white/90 italic mb-8 leading-relaxed">
-                  "{testimonial.quote}"
+              {/* Large quote mark */}
+              <div className="absolute top-4 right-6 text-[100px] font-serif leading-none text-white/[0.03] select-none pointer-events-none group-hover:text-white/[0.05] transition-colors duration-500">
+                "
+              </div>
+
+              <div className="relative z-10 mb-8">
+                <p className="text-[14px] text-white/55 leading-[1.75] font-light tracking-[0.005em]">
+                  "{t.quote}"
                 </p>
               </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                  {testimonial.name.charAt(0)}
+
+              <div className="relative z-10 flex items-center gap-3.5">
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, rgba(91,33,182,0.6), rgba(124,58,237,0.8))' }}
+                >
+                  {t.initials}
                 </div>
                 <div>
-                  <h4 className="font-bold text-white">{testimonial.name}</h4>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}, {testimonial.company}</p>
+                  <div className="text-[13px] font-medium text-white/75 tracking-[-0.01em]">{t.name}</div>
+                  <div className="text-[11px] text-white/28 mt-0.5">{t.role}, {t.company}</div>
                 </div>
               </div>
             </motion.div>

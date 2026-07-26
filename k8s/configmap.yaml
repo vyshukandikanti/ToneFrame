@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dubverse-config
+  namespace: default
+data:
+  NODE_ENV: "production"
+  DATABASE_URL: "postgresql://postgres:password123@postgres-service:5432/dubverse"
+  REDIS_URL: "redis://redis-service:6379"
+  AWS_REGION: "us-east-1"
+  S3_BUCKET: "dubverse-production-bucket"
+  WHISPER_PROVIDER: "mock"
+  TRANSLATION_PROVIDER: "mock"
+  VOICE_PROVIDER: "mock"
+  LIPSYNC_PROVIDER: "mock"
+  RENDERING_PROVIDER: "ffmpeg"

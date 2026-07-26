@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dubverse-backend
+  namespace: default
+  labels:
+    app: dubverse-backend
+spec:
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+  selector:
+    app: dubverse-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dubverse-frontend
+  namespace: default
+  labels:
+    app: dubverse-frontend
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: dubverse-frontend

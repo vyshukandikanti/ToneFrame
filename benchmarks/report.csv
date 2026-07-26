@@ -1,0 +1,5 @@
+Stage,DurationMs,MemoryMB
+"Speech Recognition",1508,18.01
+"Translation",1012,18.08
+"Voice Generation",828,20.09
+"FFmpeg Rendering",1,20.12

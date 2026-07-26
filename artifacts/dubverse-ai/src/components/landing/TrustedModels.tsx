@@ -1,29 +1,52 @@
 import { motion } from 'framer-motion';
-import { TRUSTED_MODELS } from '@/lib/mock-data/landing';
+
+const MODELS = [
+  { name: 'Whisper',      label: 'by OpenAI' },
+  { name: 'ElevenLabs',   label: 'TTS Engine' },
+  { name: 'HeyGen',       label: 'Lip Sync' },
+  { name: 'Fish Speech',  label: 'Voice Clone' },
+  { name: 'CosyVoice 2', label: 'by Alibaba' },
+  { name: 'Indus TTS-2',  label: 'Neural Voice' },
+];
 
 export function TrustedModels() {
   return (
-    <section id="models" className="py-20 border-y border-white/5 bg-background relative overflow-hidden">
-      <div className="container mx-auto px-6">
-        <p className="text-center text-sm font-medium text-muted-foreground uppercase tracking-widest mb-10">
+    <section id="models" className="py-20 relative overflow-hidden">
+      <div className="luxury-divider mb-20" />
+
+      <div className="mx-auto px-8 max-w-7xl">
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1 }}
+          className="text-center text-[10px] font-medium tracking-[0.28em] uppercase text-white/25 mb-14"
+        >
           Powered by industry-leading foundational models
-        </p>
-        
-        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70">
-          {TRUSTED_MODELS.map((model, i) => (
+        </motion.p>
+
+        <div className="flex flex-wrap justify-center items-center gap-x-14 gap-y-8">
+          {MODELS.map((model, i) => (
             <motion.div
-              key={model}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              key={model.name}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="text-xl md:text-2xl font-bold font-sans tracking-tighter text-white/80 hover:text-white transition-colors cursor-default"
+              transition={{ duration: 0.7, delay: i * 0.08 }}
+              className="flex flex-col items-center gap-1 group cursor-default"
             >
-              {model}
+              <span className="text-[18px] font-semibold tracking-[-0.02em] text-white/30 group-hover:text-white/60 transition-colors duration-500">
+                {model.name}
+              </span>
+              <span className="text-[10px] tracking-[0.14em] uppercase text-white/15 group-hover:text-white/28 transition-colors duration-500">
+                {model.label}
+              </span>
             </motion.div>
           ))}
         </div>
       </div>
+
+      <div className="luxury-divider mt-20" />
     </section>
   );
 }

@@ -1,15 +1,34 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for DubVerse AI
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: projects
+    description: Project operations
+  - name: jobs
+    description: Job operations
+  - name: transcript
+    description: Speech-to-Text operations
+  - name: translation
+    description: Translation engine operations
+  - name: emotion
+    description: Emotion Detection operations
+  - name: speaker
+    description: Speaker Diarization operations
+  - name: voice
+    description: Voice Cloning & TTS operations
+  - name: lipsync
+    description: AI Lip Sync operations
+  - name: rendering
+    description: Rendering & Export operations
 paths:
   /healthz:
     get:
@@ -24,6 +43,1336 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /health:
+    get:
+      operationId: systemHealth
+      tags: [health]
+      summary: System health check
+      responses:
+        "200":
+          description: System details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  services:
+                    type: object
+                    additionalProperties:
+                      type: string
+                required: [status, services]
+
+  /health/redis:
+    get:
+      operationId: redisHealth
+      tags: [health]
+      summary: Redis health check
+      responses:
+        "200":
+          description: Redis connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedisHealthResponse"
+        "503":
+          description: Redis connection failed
+
+  /health/workers:
+    get:
+      operationId: workersHealth
+      tags: [health]
+      summary: Background workers health check
+      responses:
+        "200":
+          description: Workers details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  workersCount:
+                    type: integer
+                  activeQueues:
+                    type: array
+                    items:
+                      type: string
+                required: [status, workersCount, activeQueues]
+
+  /health/queue:
+    get:
+      operationId: queueMetrics
+      tags: [health]
+      summary: Queues and historical job execution metrics
+      responses:
+        "200":
+          description: Detailed queue states
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueMetricsResponse"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request / validation failed
+        "409":
+          description: Email already exists
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in an existing user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid email or password
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out current user
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user profile
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List user projects with dashboard stats
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectDashboardItem"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          description: Unauthorized
+
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get project details with uploaded videos list
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+    put:
+      operationId: renameProject
+      tags: [projects]
+      summary: Rename project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameProjectRequest"
+      responses:
+        "200":
+          description: Project renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/jobs:
+    get:
+      operationId: getProjectJobs
+      tags: [projects]
+      summary: Retrieve all jobs linked to a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project background jobs list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/upload-url:
+    post:
+      operationId: getUploadUrl
+      tags: [projects]
+      summary: Generate secure presigned upload URL for media
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid parameters or file constraints validation failed
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/videos:
+    post:
+      operationId: addVideoToProject
+      tags: [projects]
+      summary: Add an uploaded video to a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddVideoRequest"
+      responses:
+        "201":
+          description: Video added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadedVideo"
+        "400":
+          description: Validation failed or metadata extraction failed
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/transcript:
+    get:
+      operationId: getTranscript
+      tags: [transcript]
+      summary: Get the active transcript details of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Active transcript job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechRecognitionJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Transcript not found
+
+  /projects/{projectId}/transcript/segments:
+    get:
+      operationId: getTranscriptSegments
+      tags: [transcript]
+      summary: Get segment-level timestamps of the active transcript
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of segments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpeechSegment"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Transcript not found
+
+  /projects/{projectId}/transcript/words:
+    get:
+      operationId: getTranscriptWords
+      tags: [transcript]
+      summary: Get word-level timestamps of the active transcript
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of words
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpeechWord"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Transcript not found
+
+  /projects/{projectId}/transcript/reprocess:
+    post:
+      operationId: reprocessTranscript
+      tags: [transcript]
+      summary: Retrigger the Speech-to-Text pipeline for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trigger result containing enqueued background job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/translations:
+    get:
+      operationId: listTranslations
+      tags: [translation]
+      summary: List all active translations for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of translation jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TranslationJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+    post:
+      operationId: createTranslation
+      tags: [translation]
+      summary: Trigger translation to a target language
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationRequest"
+      responses:
+        "201":
+          description: Translation background job enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "400":
+          description: Unsupported target language or validation failed
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/translations/retranslate:
+    post:
+      operationId: reprocessTranslation
+      tags: [translation]
+      summary: Retrigger translation pipeline to a target language
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationRequest"
+      responses:
+        "200":
+          description: Retriggered translation background job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/translations/{language}:
+    get:
+      operationId: getTranslation
+      tags: [translation]
+      summary: Get details of translation in a specific language
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: language
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Translation details with segment logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationDetail"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Translation not found
+    delete:
+      operationId: deleteTranslation
+      tags: [translation]
+      summary: Delete translation in a specific language
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: language
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delete trigger success result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        "401":
+          description: Unauthorized
+        "404":
+          description: Translation not found
+
+  /projects/{projectId}/glossaries:
+    get:
+      operationId: listGlossaries
+      tags: [translation]
+      summary: List all glossary terms of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Glossary listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GlossaryTerm"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: addGlossaryTerm
+      tags: [translation]
+      summary: Add custom glossary mapping terms to database
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GlossaryTermRequest"
+      responses:
+        "201":
+          description: Glossary term added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlossaryTerm"
+        "401":
+          description: Unauthorized
+
+  /projects/{projectId}/glossaries/{glossaryId}:
+    delete:
+      operationId: deleteGlossaryTerm
+      tags: [translation]
+      summary: Delete a glossary term from database
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: glossaryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Term deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        "401":
+          description: Unauthorized
+
+  /projects/{projectId}/emotions:
+    get:
+      operationId: getProjectEmotions
+      tags: [emotion]
+      summary: Get the active emotion analysis details of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Active emotion analysis summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmotionJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Emotion analysis not found
+
+  /projects/{projectId}/emotions/timeline:
+    get:
+      operationId: getEmotionTimeline
+      tags: [emotion]
+      summary: Retrieve segment-level emotion logs (allows start and end timestamp filtering)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of segments with fused emotions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmotionSegment"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Emotion analysis not found
+
+  /projects/{projectId}/emotions/reprocess:
+    post:
+      operationId: reprocessEmotions
+      tags: [emotion]
+      summary: Trigger/retrigger the emotion detection pipeline for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trigger result containing enqueued background job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/speakers:
+    get:
+      operationId: getProjectSpeakers
+      tags: [speaker]
+      summary: Get list of detected speakers of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of speakers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Speaker"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Speakers list not found
+
+  /projects/{projectId}/speakers/timeline:
+    get:
+      operationId: getSpeakerTimeline
+      tags: [speaker]
+      summary: Get timeline list of speaker segments
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Speaker segments list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpeakerSegment"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Speaker timeline not found
+
+  /projects/{projectId}/speakers/{speakerId}:
+    patch:
+      operationId: updateSpeaker
+      tags: [speaker]
+      summary: Update speaker metadata details (displayName, gender, estimatedAge, dominantLanguage, notes)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSpeakerRequest"
+      responses:
+        "200":
+          description: Updated speaker details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Speaker"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Speaker not found
+
+  /projects/{projectId}/speakers/reprocess:
+    post:
+      operationId: reprocessSpeakers
+      tags: [speaker]
+      summary: Trigger/retrigger the speaker diarization pipeline for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trigger result containing enqueued background job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/voices:
+    get:
+      operationId: listProjectVoices
+      tags: [voice]
+      summary: Get list of active voice generation jobs of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of voice jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VoiceGenerationJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Voices not found
+
+  /projects/{projectId}/voices/generate:
+    post:
+      operationId: generateVoices
+      tags: [voice]
+      summary: Trigger voice cloning and synthesis generation for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Voice generation background job enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/voices/{voiceProfileId}:
+    patch:
+      operationId: updateVoiceProfile
+      tags: [voice]
+      summary: Update details of a voice profile configuration (emotions, pitch, speed, presets)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: voiceProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVoiceProfileRequest"
+      responses:
+        "200":
+          description: Updated voice profile details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceProfile"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Voice profile not found
+
+  /projects/{projectId}/voices/assets:
+    get:
+      operationId: getVoiceAssets
+      tags: [voice]
+      summary: List all generated voice output assets with signed download URLs
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of voice assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VoiceAsset"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Voice assets not found
+
+  /projects/{projectId}/lipsync:
+    get:
+      operationId: getProjectLipSync
+      tags: [lipsync]
+      summary: Get active lip sync jobs details of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Active lip sync job
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LipSyncJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Lip sync job not found
+
+  /projects/{projectId}/lipsync/generate:
+    post:
+      operationId: generateLipSync
+      tags: [lipsync]
+      summary: Trigger lip sync processing for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Lip sync job enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/lipsync/assets:
+    get:
+      operationId: getLipSyncAssets
+      tags: [lipsync]
+      summary: List all generated lip sync assets with signed download URLs
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of lip sync assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LipSyncAsset"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Lip sync assets not found
+
+  /projects/{projectId}/lipsync/reprocess:
+    post:
+      operationId: reprocessLipSync
+      tags: [lipsync]
+      summary: Retrigger lip sync processing
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Retriggered lip sync job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/renders:
+    get:
+      operationId: listProjectRenders
+      tags: [rendering]
+      summary: List all active rendering jobs of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of rendering jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RenderJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Renders not found
+    post:
+      operationId: triggerRender
+      tags: [rendering]
+      summary: Start video rendering workflow for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriggerRenderRequest"
+      responses:
+        "201":
+          description: Rendering job enqueued successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/renders/reprocess:
+    post:
+      operationId: reprocessRender
+      tags: [rendering]
+      summary: Re-render final video package
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriggerRenderRequest"
+      responses:
+        "200":
+          description: Re-render job enqueued successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/renders/assets:
+    get:
+      operationId: getRenderedAssets
+      tags: [rendering]
+      summary: Fetch all rendered video assets with signed download URLs
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of rendered assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RenderedAsset"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Rendered assets not found
+
+  /projects/{projectId}/exports:
+    get:
+      operationId: listProjectExports
+      tags: [rendering]
+      summary: List all active export jobs of a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of export jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExportJob"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Exports not found
+    post:
+      operationId: triggerExport
+      tags: [rendering]
+      summary: Start export packaging for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriggerExportRequest"
+      responses:
+        "201":
+          description: Export packaging job enqueued successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+
+  /projects/{projectId}/exports/assets:
+    get:
+      operationId: getExportAssets
+      tags: [rendering]
+      summary: Fetch all packaged export files with signed download URLs
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of export assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExportAsset"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Export assets not found
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List all user background jobs
+      responses:
+        "200":
+          description: List of background jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get details of a specific job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detailed job metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Job not found
+
+  /jobs/{jobId}/cancel:
+    post:
+      operationId: cancelJob
+      tags: [jobs]
+      summary: Cancel an active processing job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job cancellation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        "401":
+          description: Unauthorized
+        "404":
+          description: Job not found
+
+  /jobs/{jobId}/retry:
+    post:
+      operationId: retryJob
+      tags: [jobs]
+      summary: Retry a failed processing job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job retry trigger result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        "401":
+          description: Unauthorized
+        "404":
+          description: Job not found
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +1383,1200 @@ components:
       required:
         - status
 
+    RedisHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        error:
+          type: string
+      required:
+        - status
+
+    QueueMetricItem:
+      type: object
+      properties:
+        waiting:
+          type: integer
+        active:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+      required:
+        - waiting
+        - active
+        - completed
+        - failed
+
+    DbMetrics:
+      type: object
+      properties:
+        totalJobs:
+          type: integer
+        completedJobs:
+          type: integer
+        failedJobs:
+          type: integer
+        totalRetries:
+          type: integer
+        avgDurationSec:
+          type: integer
+        successRate:
+          type: string
+      required:
+        - totalJobs
+        - completedJobs
+        - failedJobs
+        - totalRetries
+        - avgDurationSec
+        - successRate
+
+    QueueMetricsResponse:
+      type: object
+      properties:
+        queues:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/QueueMetricItem"
+        dbMetrics:
+          $ref: "#/components/schemas/DbMetrics"
+      required:
+        - queues
+        - dbMetrics
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - fullName
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        accessToken:
+          type: string
+      required:
+        - user
+        - accessToken
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        fullName:
+          type: string
+          minLength: 2
+      required:
+        - email
+        - password
+        - fullName
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    CreateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
+
+    RenameProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
+
+    UploadUrlRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - fileName
+        - fileSize
+        - contentType
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+        s3Key:
+          type: string
+      required:
+        - uploadUrl
+        - s3Key
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - name
+        - status
+        - createdAt
+        - updatedAt
+
+    ProjectDashboardItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        videoCount:
+          type: integer
+        latestVideoStatus:
+          type: string
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+        - updatedAt
+        - videoCount
+
+    ProjectDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        videos:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadedVideo"
+      required:
+        - id
+        - userId
+        - name
+        - status
+        - createdAt
+        - updatedAt
+        - videos
+
+    AddVideoRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+        s3Key:
+          type: string
+        durationSeconds:
+          type: integer
+        fileSize:
+          type: integer
+        mimeType:
+          type: string
+      required:
+        - fileName
+        - s3Key
+        - durationSeconds
+        - fileSize
+        - mimeType
+
+    UploadedVideo:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        fileName:
+          type: string
+        s3Key:
+          type: string
+        durationSeconds:
+          type: integer
+        fileSize:
+          type: integer
+        resolution:
+          type: string
+        mimeType:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        fps:
+          type: string
+        codec:
+          type: string
+          format: double
+        bitrate:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - fileName
+        - s3Key
+        - durationSeconds
+        - fileSize
+        - mimeType
+        - createdAt
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        projectName:
+          type: string
+        stage:
+          type: string
+        status:
+          type: string
+        progress:
+          type: integer
+        priority:
+          type: integer
+        retryCount:
+          type: integer
+        workerId:
+          type: string
+        errorMessage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - stage
+        - status
+        - progress
+        - priority
+        - retryCount
+        - createdAt
+
+    SpeechRecognitionJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        jobId:
+          type: string
+        transcript:
+          type: string
+        language:
+          type: string
+        languageConfidence:
+          type: number
+        confidence:
+          type: number
+        srtKey:
+          type: string
+        vttKey:
+          type: string
+        jsonKey:
+          type: string
+        version:
+          type: integer
+        isCurrent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - transcript
+        - version
+        - isCurrent
+        - createdAt
+
+    SpeechSegment:
+      type: object
+      properties:
+        id:
+          type: string
+        speechJobId:
+          type: string
+        text:
+          type: string
+        startTime:
+          type: number
+        endTime:
+          type: number
+        confidence:
+          type: number
+        speakerId:
+          type: string
+      required:
+        - id
+        - speechJobId
+        - text
+        - startTime
+        - endTime
+
+    SpeechWord:
+      type: object
+      properties:
+        id:
+          type: string
+        speechJobId:
+          type: string
+        segmentId:
+          type: string
+        word:
+          type: string
+        startTime:
+          type: number
+        endTime:
+          type: number
+          format: double
+        confidence:
+          type: number
+          format: double
+      required:
+        - id
+        - speechJobId
+        - segmentId
+        - word
+        - startTime
+        - endTime
+
+    TranslationRequest:
+      type: object
+      properties:
+        targetLanguage:
+          type: string
+      required:
+        - targetLanguage
+
+    TranslationJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        speechJobId:
+          type: string
+        sourceLanguage:
+          type: string
+        targetLanguage:
+          type: string
+        translatedText:
+          type: string
+        confidence:
+          type: number
+        provider:
+          type: string
+        version:
+          type: integer
+        isCurrent:
+          type: boolean
+        processingTimeMs:
+          type: integer
+        tokenUsage:
+          type: integer
+        retryCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - speechJobId
+        - sourceLanguage
+        - targetLanguage
+        - translatedText
+        - provider
+        - version
+        - isCurrent
+        - createdAt
+
+    TranslatedSegment:
+      type: object
+      properties:
+        id:
+          type: string
+        translationJobId:
+          type: string
+        originalSegmentId:
+          type: string
+        text:
+          type: string
+        startTime:
+          type: number
+        endTime:
+          type: number
+        confidence:
+          type: number
+        reviewStatus:
+          type: string
+        reviewerId:
+          type: string
+        reviewedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - translationJobId
+        - originalSegmentId
+        - text
+        - startTime
+        - endTime
+        - reviewStatus
+        - createdAt
+
+    TranslationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        speechJobId:
+          type: string
+        sourceLanguage:
+          type: string
+        targetLanguage:
+          type: string
+        translatedText:
+          type: string
+        confidence:
+          type: number
+        provider:
+          type: string
+        version:
+          type: integer
+          format: int32
+        isCurrent:
+          type: boolean
+        processingTimeMs:
+          type: integer
+        tokenUsage:
+          type: integer
+        retryCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranslatedSegment"
+      required:
+        - id
+        - projectId
+        - speechJobId
+        - sourceLanguage
+        - targetLanguage
+        - translatedText
+        - provider
+        - version
+        - isCurrent
+        - createdAt
+        - segments
+
+    GlossaryTerm:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        sourceText:
+          type: string
+        targetText:
+          type: string
+        targetLanguage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - sourceText
+        - targetText
+        - targetLanguage
+        - createdAt
+
+    GlossaryTermRequest:
+      type: object
+      properties:
+        sourceText:
+          type: string
+        targetText:
+          type: string
+        targetLanguage:
+          type: string
+      required:
+        - sourceText
+        - targetText
+        - targetLanguage
+
+    EmotionJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        speechJobId:
+          type: string
+        translationJobId:
+          type: string
+        provider:
+          type: string
+        version:
+          type: integer
+        isCurrent:
+          type: boolean
+        avgConfidence:
+          type: number
+        modelVersion:
+          type: string
+        processingTimeMs:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - speechJobId
+        - provider
+        - version
+        - isCurrent
+        - createdAt
+
+    EmotionSegment:
+      type: object
+      properties:
+        id:
+          type: string
+        emotionJobId:
+          type: string
+        segmentId:
+          type: string
+        textEmotion:
+          type: string
+        audioEmotion:
+          type: string
+        finalEmotion:
+          type: string
+        confidence:
+          type: number
+        intensity:
+          type: number
+        startTime:
+          type: number
+        endTime:
+          type: number
+        speakerId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - emotionJobId
+        - segmentId
+        - textEmotion
+        - audioEmotion
+        - finalEmotion
+        - confidence
+        - intensity
+        - startTime
+        - endTime
+        - createdAt
+
+    Speaker:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        speakerJobId:
+          type: string
+        speakerLabel:
+          type: string
+        displayName:
+          type: string
+        gender:
+          type: string
+        estimatedAge:
+          type: string
+        dominantLanguage:
+          type: string
+        voiceProfileId:
+          type: string
+        sampleAudioPath:
+          type: string
+        faceId:
+          type: string
+        avatarThumbnail:
+          type: string
+        notes:
+          type: string
+        createdByUser:
+          type: boolean
+        isLocked:
+          type: boolean
+        totalSpeakingTime:
+          type: number
+        numberOfSegments:
+          type: integer
+        averageConfidence:
+          type: number
+        firstAppearance:
+          type: number
+        lastAppearance:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - speakerJobId
+        - speakerLabel
+        - displayName
+        - createdByUser
+        - isLocked
+        - totalSpeakingTime
+        - numberOfSegments
+        - averageConfidence
+        - firstAppearance
+        - lastAppearance
+        - createdAt
+
+    UpdateSpeakerRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        gender:
+          type: string
+        estimatedAge:
+          type: string
+        dominantLanguage:
+          type: string
+        notes:
+          type: string
+        voiceProfileId:
+          type: string
+
+    SpeakerSegment:
+      type: object
+      properties:
+        id:
+          type: string
+        speakerJobId:
+          type: string
+        speakerId:
+          type: string
+        startTime:
+          type: number
+        endTime:
+          type: number
+          format: double
+        confidence:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - speakerJobId
+        - speakerId
+        - startTime
+        - endTime
+        - confidence
+        - createdAt
+
+    VoiceProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        speakerId:
+          type: string
+        provider:
+          type: string
+        voiceName:
+          type: string
+        model:
+          type: string
+        language:
+          type: string
+        emotionPreset:
+          type: string
+        speed:
+          type: number
+        pitch:
+          type: number
+        sampleRate:
+          type: integer
+        isDefault:
+          type: boolean
+        isFineTuned:
+          type: boolean
+        version:
+          type: integer
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - speakerId
+        - provider
+        - voiceName
+        - isDefault
+        - isFineTuned
+        - version
+        - createdAt
+        - updatedAt
+
+    UpdateVoiceProfileRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+        voiceName:
+          type: string
+        model:
+          type: string
+        language:
+          type: string
+        emotionPreset:
+          type: string
+        speed:
+          type: number
+        pitch:
+          type: number
+        sampleRate:
+          type: integer
+
+    VoiceGenerationJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        translationJobId:
+          type: string
+        emotionJobId:
+          type: string
+        provider:
+          type: string
+        modelVersion:
+          type: string
+        isCurrent:
+          type: boolean
+        processingTimeMs:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - translationJobId
+        - provider
+        - isCurrent
+        - createdAt
+
+    VoiceAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        voiceJobId:
+          type: string
+        s3Key:
+          type: string
+        format:
+          type: string
+        duration:
+          type: number
+        sampleRate:
+          type: integer
+        downloadUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - voiceJobId
+        - s3Key
+        - format
+        - duration
+        - sampleRate
+        - downloadUrl
+        - createdAt
+
+    LipSyncJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        voiceGenerationJobId:
+          type: string
+        speakerJobId:
+          type: string
+        provider:
+          type: string
+        modelVersion:
+          type: string
+        status:
+          type: string
+        processingTimeMs:
+          type: integer
+        confidence:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - voiceGenerationJobId
+        - speakerJobId
+        - provider
+        - status
+        - createdAt
+
+    LipSyncAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        jobId:
+          type: string
+        format:
+          type: string
+        resolution:
+          type: string
+        fps:
+          type: number
+        duration:
+          type: number
+        fileSize:
+          type: integer
+        checksum:
+          type: string
+        mimeType:
+          type: string
+        s3Key:
+          type: string
+        downloadUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - jobId
+        - format
+        - duration
+        - fileSize
+        - s3Key
+        - downloadUrl
+        - createdAt
+
+    TriggerRenderRequest:
+      type: object
+      properties:
+        resolution:
+          type: string
+          enum: [480p, 720p, 1080p, 4K]
+          default: 1080p
+        format:
+          type: string
+          enum: [mp4, mov, webm]
+          default: mp4
+        codec:
+          type: string
+          enum: [h264, h265]
+          default: h264
+        hasSubtitles:
+          type: boolean
+          default: false
+        hasWatermark:
+          type: boolean
+          default: false
+      required: []
+
+    TriggerExportRequest:
+      type: object
+      properties:
+        exportType:
+          type: string
+          enum: [video_package, audio_only, subtitles, project_archive, metadata_json]
+          default: video_package
+      required: []
+
+    RenderJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        lipSyncJobId:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        resolution:
+          type: string
+        format:
+          type: string
+        codec:
+          type: string
+        hasSubtitles:
+          type: boolean
+        hasWatermark:
+          type: boolean
+        processingTimeMs:
+          type: integer
+        errorMessage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - provider
+        - status
+        - resolution
+        - format
+        - codec
+        - hasSubtitles
+        - hasWatermark
+        - createdAt
+
+    RenderedAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        renderJobId:
+          type: string
+        s3Key:
+          type: string
+        format:
+          type: string
+        resolution:
+          type: string
+        fps:
+          type: number
+        duration:
+          type: number
+        fileSize:
+          type: integer
+        checksum:
+          type: string
+        mimeType:
+          type: string
+        thumbnailS3Key:
+          type: string
+        thumbnailUrl:
+          type: string
+        previewS3Key:
+          type: string
+        previewUrl:
+          type: string
+        waveformS3Key:
+          type: string
+        waveformUrl:
+          type: string
+        downloadUrl:
+          type: string
+        version:
+          type: integer
+        isCurrent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - renderJobId
+        - s3Key
+        - format
+        - resolution
+        - duration
+        - fileSize
+        - version
+        - isCurrent
+        - downloadUrl
+        - createdAt
+
+    ExportJob:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        renderJobId:
+          type: string
+        status:
+          type: string
+        exportType:
+          type: string
+        errorMessage:
+          type: string
+        processingTimeMs:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - status
+        - exportType
+        - createdAt
+
+    ExportAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        exportJobId:
+          type: string
+        s3Key:
+          type: string
+        format:
+          type: string
+        fileSize:
+          type: integer
+        checksum:
+          type: string
+          format: double
+        mimeType:
+          type: string
+        downloadUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - exportJobId
+        - s3Key
+        - format
+        - fileSize
+        - downloadUrl
+        - createdAt

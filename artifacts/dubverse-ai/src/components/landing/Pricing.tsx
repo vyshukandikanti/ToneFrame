@@ -1,81 +1,166 @@
 import { motion } from 'framer-motion';
-import { PRICING_PLANS } from '@/lib/mock-data/landing';
-import { Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Check, ArrowRight } from 'lucide-react';
+
+const PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: '$29',
+    interval: '/month',
+    description: 'For independent creators getting started with AI dubbing.',
+    features: [
+      '2 hours of video dubbing',
+      'Standard voice cloning',
+      '10 languages supported',
+      '1080p exports',
+      'Community support',
+    ],
+    cta: 'Start Free Trial',
+    popular: false,
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '$79',
+    interval: '/month',
+    description: 'For studios and creators who need maximum quality and reach.',
+    features: [
+      '10 hours of video dubbing',
+      'High-fidelity voice cloning',
+      'All 40+ languages',
+      '4K exports with lip sync',
+      'Emotion transfer control',
+      'Priority API access',
+    ],
+    cta: 'Get Pro',
+    popular: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Custom',
+    interval: '',
+    description: 'For broadcast networks and production companies at scale.',
+    features: [
+      'Unlimited video dubbing',
+      'Custom model training',
+      'Dedicated account manager',
+      'On-premise deployment',
+      'White-glove onboarding',
+      'SLA guarantee',
+    ],
+    cta: 'Contact Sales',
+    popular: false,
+  },
+];
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      <div className="container mx-auto px-6 max-w-7xl relative z-10">
-        <div className="text-center mb-16">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-4"
-          >
-            Simple, transparent pricing.
-          </motion.h2>
-          <p className="text-muted-foreground text-lg">No hidden fees. Cancel anytime.</p>
-        </div>
+    <section id="pricing" className="py-28 relative overflow-hidden">
+      {/* Ambient */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(91,33,182,0.06) 0%, transparent 70%)' }}
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {PRICING_PLANS.map((plan, i) => (
+      <div className="mx-auto px-8 max-w-7xl relative z-10">
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+        >
+          <p className="text-[10px] font-medium tracking-[0.28em] uppercase text-white/28 mb-5">
+            Pricing
+          </p>
+          <h2 className="text-[clamp(2rem,4vw,3.2rem)] font-bold tracking-[-0.03em] leading-[1.1] text-white mb-4">
+            Simple, transparent pricing.
+          </h2>
+          <p className="text-[14px] text-white/30 font-light">
+            No hidden fees. Cancel anytime.
+          </p>
+        </motion.div>
+
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+          {PLANS.map((plan, i) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-              className={`rounded-3xl p-8 flex flex-col ${
-                plan.popular 
-                  ? 'glass-heavy border-blue-500/30 glow-blue relative transform md:-translate-y-4' 
-                  : 'glass-sm border-white/5 mt-4'
+              transition={{ duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className={`relative rounded-2xl p-7 flex flex-col ${
+                plan.popular
+                  ? 'gold-border'
+                  : 'luxury-card'
               }`}
+              style={plan.popular ? {
+                background: 'rgba(255,255,255,0.03)',
+                boxShadow: '0 0 60px rgba(196,163,90,0.08), 0 0 120px rgba(196,163,90,0.04)',
+              } : {}}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <Badge className="gradient-primary border-0 text-white shadow-lg px-4 py-1 text-sm font-semibold">
+                <div className="absolute -top-px left-1/2 -translate-x-1/2 -translate-y-full pb-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.14em] uppercase"
+                    style={{ background: 'rgba(196,163,90,0.12)', border: '1px solid rgba(196,163,90,0.25)', color: '#C4A35A' }}
+                  >
                     Most Popular
-                  </Badge>
+                  </span>
                 </div>
               )}
 
-              <div className="mb-8">
-                <h3 className="text-xl font-medium text-white mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">{plan.price}</span>
-                  <span className="text-muted-foreground font-medium">{plan.interval}</span>
+              {/* Plan name & price */}
+              <div className="mb-7">
+                <div className="text-[11px] font-medium tracking-[0.18em] uppercase text-white/30 mb-4">
+                  {plan.name}
                 </div>
+                <div className="flex items-baseline gap-1.5 mb-3">
+                  <span className={`text-[44px] font-bold tracking-[-0.04em] leading-none ${plan.popular ? 'gradient-text-gold' : 'text-white/85'}`}>
+                    {plan.price}
+                  </span>
+                  {plan.interval && (
+                    <span className="text-[13px] text-white/28 font-light">{plan.interval}</span>
+                  )}
+                </div>
+                <p className="text-[12px] text-white/28 leading-relaxed font-light">
+                  {plan.description}
+                </p>
               </div>
 
-              <div className="flex-grow">
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <div className="mt-1 rounded-full bg-blue-500/20 p-1 flex-shrink-0">
-                        <Check className="w-3 h-3 text-blue-400" />
-                      </div>
-                      <span className="text-white/80">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Divider */}
+              <div className="luxury-divider mb-7" />
 
-              <Button 
-                size="lg" 
-                variant={plan.popular ? "default" : "outline"} 
-                className={`w-full h-12 rounded-xl font-semibold transition-all ${
-                  plan.popular 
-                    ? 'gradient-primary border-0 text-white hover:opacity-90 shadow-lg' 
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'
+              {/* Features */}
+              <ul className="space-y-3.5 flex-grow mb-8">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0">
+                      <Check className={`w-3.5 h-3.5 ${plan.popular ? 'text-amber-400/70' : 'text-white/30'}`} />
+                    </div>
+                    <span className="text-[13px] text-white/50 font-light leading-snug">
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <button
+                className={`w-full py-3 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 group transition-all duration-300 ${
+                  plan.popular
+                    ? 'text-[#09090f] hover:opacity-90'
+                    : 'text-white/50 border border-white/08 hover:border-white/14 hover:text-white/75'
                 }`}
+                style={plan.popular ? {
+                  background: 'linear-gradient(135deg, #C4A35A, #D4B896)',
+                } : {}}
               >
                 {plan.cta}
-              </Button>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </button>
             </motion.div>
           ))}
         </div>

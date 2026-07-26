@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-07-26T14:31:22.314Z",
+  "totalDurationMs": 3351,
+  "cpuUsage": {
+    "user": 141000,
+    "system": 62000
+  },
+  "results": {
+    "Speech Recognition": {
+      "durationMs": 1508,
+      "memoryMb": 18.008506774902344
+    },
+    "Translation": {
+      "durationMs": 1012,
+      "memoryMb": 18.0787353515625
+    },
+    "Voice Generation": {
+      "durationMs": 828,
+      "memoryMb": 20.091514587402344
+    },
+    "FFmpeg Rendering": {
+      "durationMs": 1,
+      "memoryMb": 20.11829376220703
+    }
+  }
+}

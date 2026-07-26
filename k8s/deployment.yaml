@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dubverse-backend
+  namespace: default
+  labels:
+    app: dubverse-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dubverse-backend
+  template:
+    metadata:
+      labels:
+        app: dubverse-backend
+    spec:
+      containers:
+        - name: backend
+          image: dubverse-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: dubverse-config
+            - secretRef:
+                name: dubverse-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dubverse-worker
+  namespace: default
+  labels:
+    app: dubverse-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dubverse-worker
+  template:
+    metadata:
+      labels:
+        app: dubverse-worker
+    spec:
+      containers:
+        - name: worker
+          image: dubverse-worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: START_HTTP
+              value: "false"
+          envFrom:
+            - configMapRef:
+                name: dubverse-config
+            - secretRef:
+                name: dubverse-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1024Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2048Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dubverse-frontend
+  namespace: default
+  labels:
+    app: dubverse-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dubverse-frontend
+  template:
+    metadata:
+      labels:
+        app: dubverse-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: dubverse-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

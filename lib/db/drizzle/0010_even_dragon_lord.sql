@@ -1,0 +1,1 @@
+ALTER TABLE "rendered_assets" ADD COLUMN "preview_s3_key" text;

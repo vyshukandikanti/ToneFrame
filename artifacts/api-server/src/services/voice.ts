@@ -1,0 +1,345 @@
+import { logger } from "../lib/logger";
+
+export interface SynthesizeOptions {
+  text: string;
+  language: string;
+  speed?: number;
+  pitch?: number;
+  energy?: number;
+  emotionPreset?: string;
+  voiceName?: string;
+}
+
+export interface VoiceProviderResult {
+  audioBuffer: Buffer;
+  sampleRate: number;
+  duration: number;
+  confidence?: number;
+}
+
+export interface VoiceProvider {
+  name: string;
+  synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult>;
+}
+
+// Generate valid playable dummy WAV file in memory
+export function createMockWavBuffer(durationSeconds = 2, sampleRate = 16000): Buffer {
+  const numSamples = Math.floor(durationSeconds * sampleRate);
+  const buffer = Buffer.alloc(44 + numSamples * 2);
+
+  buffer.write("RIFF", 0);
+  buffer.writeUInt32LE(36 + numSamples * 2, 4);
+  buffer.write("WAVE", 8);
+  buffer.write("fmt ", 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20); // PCM format
+  buffer.writeUInt16LE(1, 22); // Mono channel
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write("data", 36);
+  buffer.writeUInt32LE(numSamples * 2, 40);
+
+  return buffer;
+}
+
+// Mapping emotion values to speech parameters
+export function getEmotionSpeechParameters(emotion: string, intensity = 0.8) {
+  const norm = emotion.toLowerCase().trim();
+
+  let speed = 1.0;
+  let pitch = 0.0;
+  let energy = 1.0;
+  let preset = "neutral";
+
+  switch (norm) {
+    case "happy":
+      speed = 1.1;
+      pitch = 0.15 * intensity;
+      energy = 1.1;
+      preset = "happy";
+      break;
+    case "sad":
+      speed = 0.85;
+      pitch = -0.15 * intensity;
+      energy = 0.8;
+      preset = "sad";
+      break;
+    case "angry":
+      speed = 1.15;
+      pitch = 0.1 * intensity;
+      energy = 1.3 * intensity;
+      preset = "angry";
+      break;
+    case "excited":
+      speed = 1.2;
+      pitch = 0.2 * intensity;
+      energy = 1.2;
+      preset = "excited";
+      break;
+    case "fear":
+      speed = 1.1;
+      pitch = 0.1 * intensity;
+      energy = 0.9;
+      preset = "whisper";
+      break;
+    case "calm":
+      speed = 0.9;
+      pitch = -0.05 * intensity;
+      energy = 0.85;
+      preset = "calm";
+      break;
+    case "surprise":
+      speed = 1.1;
+      pitch = 0.25 * intensity;
+      energy = 1.15;
+      preset = "excited";
+      break;
+    case "neutral":
+    default:
+      break;
+  }
+
+  return { speed, pitch, energy, emotionPreset: preset };
+}
+
+// 1. Mock TTS Provider
+export class MockVoiceProvider implements VoiceProvider {
+  name = "mock";
+
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    logger.info(`Mocking Voice Generation [${options.language}] for text: "${options.text.substring(0, 30)}..."`);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, parseFloat((words / 2.1).toFixed(2)));
+
+    const audioBuffer = createMockWavBuffer(duration, 16000);
+
+    return {
+      audioBuffer,
+      sampleRate: 16000,
+      duration,
+      confidence: 0.98,
+    };
+  }
+}
+
+// 2. Fish Speech Provider (Fish Audio REST API)
+export class FishSpeechProvider implements VoiceProvider {
+  name = "fish";
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    const apiKey = process.env.FISH_AUDIO_API_KEY;
+    if (!apiKey) throw new Error("Fish Speech requires FISH_AUDIO_API_KEY");
+
+    logger.info(`Synthesizing via Fish Speech API (Voice reference: ${options.voiceName || "default"})`);
+
+    const res = await fetch("https://api.fish.audio/v1/tts", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: options.text,
+        chunk_length: 200,
+        format: "wav",
+        reference_id: options.voiceName || undefined,
+        prosody: {
+          speed: options.speed || 1.0,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Fish Speech API failed (${res.status}): ${err}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, words / 2.1);
+
+    return {
+      audioBuffer,
+      sampleRate: 44100,
+      duration,
+      confidence: 0.98,
+    };
+  }
+}
+
+// 3. CosyVoice 2 Provider (REST backend service wrapper)
+export class CosyVoiceProvider implements VoiceProvider {
+  name = "cosyvoice";
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    const serviceUrl = process.env.COSYVOICE_API_URL || "http://127.0.0.1:50000/tts";
+    logger.info(`Synthesizing via CosyVoice service at: ${serviceUrl}`);
+
+    const res = await fetch(serviceUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: options.text,
+        speaker: options.voiceName || "default",
+        speed: options.speed || 1.0,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`CosyVoice API failed (${res.status}): ${err}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, words / 2.1);
+
+    return {
+      audioBuffer,
+      sampleRate: 22050,
+      duration,
+      confidence: 0.97,
+    };
+  }
+}
+
+// 4. Indus TTS-2 Provider (REST backend service wrapper)
+export class IndusVoiceProvider implements VoiceProvider {
+  name = "indus";
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    const serviceUrl = process.env.INDUS_TTS_API_URL || "http://127.0.0.1:40000/tts";
+    logger.info(`Synthesizing via Indus TTS-2 service at: ${serviceUrl}`);
+
+    const res = await fetch(serviceUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: options.text,
+        voice: options.voiceName || "default",
+        language: options.language,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Indus TTS API failed (${res.status}): ${err}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, words / 2.1);
+
+    return {
+      audioBuffer,
+      sampleRate: 24000,
+      duration,
+      confidence: 0.96,
+    };
+  }
+}
+
+// 5. ElevenLabs API Provider
+export class ElevenLabsVoiceProvider implements VoiceProvider {
+  name = "elevenlabs";
+
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) throw new Error("ElevenLabs requires ELEVENLABS_API_KEY");
+
+    const voiceId = options.voiceName || process.env.ELEVENLABS_DEFAULT_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
+    logger.info(`Synthesizing via ElevenLabs API (Voice ID: ${voiceId})`);
+
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: options.text,
+        model_id: "eleven_monolingual_v1",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`ElevenLabs TTS failed (${res.status}): ${err}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, words / 2.1);
+
+    return {
+      audioBuffer,
+      sampleRate: 44100,
+      duration,
+      confidence: 0.99,
+    };
+  }
+}
+
+// Fallback Provider execution loop
+export async function synthesizeVoiceWithFallback(
+  options: SynthesizeOptions
+): Promise<VoiceProviderResult & { usedProvider: string }> {
+  const fallbackOrder = (process.env.VOICE_FALLBACK_ORDER || "fish,cosyvoice,indus,elevenlabs,mock")
+    .split(",")
+    .map((s) => s.trim().toLowerCase());
+
+  let lastError: Error | null = null;
+
+  for (const name of fallbackOrder) {
+    let provider: VoiceProvider;
+    switch (name) {
+      case "fish":
+        provider = new FishSpeechProvider();
+        break;
+      case "cosyvoice":
+        provider = new CosyVoiceProvider();
+        break;
+      case "indus":
+        provider = new IndusVoiceProvider();
+        break;
+      case "elevenlabs":
+        provider = new ElevenLabsVoiceProvider();
+        break;
+      case "mock":
+      default:
+        provider = new MockVoiceProvider();
+        break;
+    }
+
+    try {
+      logger.info(`Running TTS generation using provider: ${provider.name}`);
+      const result = await provider.synthesize(options);
+      return {
+        ...result,
+        usedProvider: provider.name,
+      };
+    } catch (err: any) {
+      logger.warn(`TTS provider ${name} failed: ${err.message}. Retrying fallback...`);
+      lastError = err;
+    }
+  }
+
+  throw new Error(`All voice cloning providers failed. Last error: ${lastError?.message}`);
+}

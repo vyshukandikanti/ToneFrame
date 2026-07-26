@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dubverse-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+spec:
+  rules:
+    - host: dubverse.example.com
+      http:
+        paths:
+          # Backend REST APIs path
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: dubverse-backend
+                port:
+                  number: 5000
+          # Socket.io connection path
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: dubverse-backend
+                port:
+                  number: 5000
+          # Frontend static routing path
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dubverse-frontend
+                port:
+                  number: 80

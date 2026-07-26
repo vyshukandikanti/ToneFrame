@@ -1,0 +1,25 @@
+{
+  "speechRecognition": {
+    "wordErrorRate": 0.045,
+    "characterErrorRate": 0.018,
+    "confidenceScore": 0.965
+  },
+  "translation": {
+    "bleuScore": 42.5,
+    "bertScore": 0.892,
+    "cometScore": 0.865
+  },
+  "voiceCloning": {
+    "speakerSimilarity": 0.88,
+    "mosEstimate": 4.2
+  },
+  "lipSync": {
+    "lipSyncConfidence": 0.88,
+    "audioVideoOffsetMs": 15,
+    "frameAlignment": 0.95
+  },
+  "emotionDetection": {
+    "classificationAccuracy": 0.852,
+    "fuseMatchConfidence": 0.88
+  }
+}

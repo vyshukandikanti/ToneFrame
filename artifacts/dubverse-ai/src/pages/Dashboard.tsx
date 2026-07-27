@@ -71,7 +71,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <Folder className="w-5 h-5 text-violet-500" />
             <span className="font-semibold text-lg tracking-tight">
-              DubVerse<span className="text-violet-500">Dashboard</span>
+              ToneFrame<span className="text-violet-500"> Dashboard</span>
             </span>
           </div>
 

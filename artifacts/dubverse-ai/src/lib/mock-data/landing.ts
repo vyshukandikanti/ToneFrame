@@ -114,7 +114,7 @@ export const TESTIMONIALS: Testimonial[] = [
     name: "Sarah Jenkins",
     role: "Post-Production Lead",
     company: "Nexus Studios",
-    quote: "DubVerse AI cut our localization time from weeks to hours. The lip-sync capability is indistinguishable from human dubbing. A game changer for our international releases.",
+    quote: "ToneFrame cut our localization time from weeks to hours. The lip-sync capability is indistinguishable from human dubbing. A game changer for our international releases.",
     rating: 5
   },
   {
@@ -130,7 +130,7 @@ export const TESTIMONIALS: Testimonial[] = [
     name: "Elena Rostova",
     role: "Director",
     company: "Aura Films",
-    quote: "We were skeptical about AI voices for dramatic scenes, but DubVerse captures the whisper, the breath, and the intensity. It's an essential part of our pipeline now.",
+    quote: "We were skeptical about AI voices for dramatic scenes, but ToneFrame captures the whisper, the breath, and the intensity. It's an essential part of our pipeline now.",
     rating: 5
   }
 ];
@@ -201,7 +201,7 @@ export const FAQS: FAQ[] = [
   },
   {
     id: "faq-4",
-    question: "Can I use DubVerse AI for commercial projects?",
+    question: "Can I use ToneFrame for commercial projects?",
     answer: "Absolutely. All paid tiers include a full commercial license for the generated audio and video. You retain 100% ownership of your content."
   },
   {

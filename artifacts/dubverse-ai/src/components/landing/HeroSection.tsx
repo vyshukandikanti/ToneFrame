@@ -47,7 +47,7 @@ export function HeroSection() {
         >
           <div className="h-px w-8 bg-gradient-to-r from-transparent to-white/20" />
           <span className="text-[11px] font-medium tracking-[0.22em] uppercase text-white/35">
-            Introducing DubVerse 2.0
+            Introducing ToneFrame 2.0
           </span>
           <div className="h-px w-8 bg-gradient-to-l from-transparent to-white/20" />
         </motion.div>

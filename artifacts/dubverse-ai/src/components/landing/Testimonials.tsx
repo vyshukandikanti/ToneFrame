@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 const TESTIMONIALS = [
   {
-    quote: "DubVerse AI cut our localization time from weeks to hours. The lip-sync is indistinguishable from human dubbing. An essential part of our international release pipeline.",
+    quote: "ToneFrame cut our localization time from weeks to hours. The lip-sync is indistinguishable from human dubbing. An essential part of our international release pipeline.",
     name: 'Sarah Jenkins',
     role: 'Post-Production Lead',
     company: 'Nexus Studios',
@@ -16,7 +16,7 @@ const TESTIMONIALS = [
     initials: 'DC',
   },
   {
-    quote: "We were skeptical about AI voices for dramatic scenes. DubVerse captures the whisper, the breath, the intensity. It's become our production standard.",
+    quote: "We were skeptical about AI voices for dramatic scenes. ToneFrame captures the whisper, the breath, the intensity. It's become our production standard.",
     name: 'Elena Rostova',
     role: 'Director',
     company: 'Aura Films',

@@ -15,7 +15,7 @@ const FAQS = [
     answer: 'We support 40+ languages including English, Spanish, French, German, Mandarin, Japanese, Korean, Arabic, Hindi, and Portuguese, with regional accents and dialect options for each major language group.',
   },
   {
-    question: 'Can I use DubVerse AI for commercial projects?',
+    question: 'Can I use ToneFrame for commercial projects?',
     answer: 'All paid tiers include a full commercial license for generated audio and video content. You retain 100% ownership of your content. We never claim rights over your productions.',
   },
   {

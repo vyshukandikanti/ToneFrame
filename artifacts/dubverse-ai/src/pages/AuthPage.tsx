@@ -118,7 +118,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md bg-white/03 backdrop-blur-xl border-white/08 shadow-2xl rounded-2xl overflow-hidden">
         <CardHeader className="text-center pt-8 pb-4">
           <CardTitle className="text-3xl font-extrabold tracking-tight text-white">
-            DubVerse<span className="gradient-text-gold">AI</span>
+            Tone<span className="gradient-text-gold">Frame</span>
           </CardTitle>
           <CardDescription className="text-white/40 mt-1">
             Studio-quality AI dubbing and translation

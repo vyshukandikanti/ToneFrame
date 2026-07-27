@@ -28,7 +28,7 @@ export function Footer() {
                 </div>
               </div>
               <span className="font-semibold text-[14px] tracking-[-0.02em] text-white/75">
-                DubVerse<span className="gradient-text-gold">AI</span>
+                Tone<span className="gradient-text-gold">Frame</span>
               </span>
             </div>
             <p className="text-[13px] text-white/25 leading-relaxed font-light max-w-[200px]">
@@ -75,7 +75,7 @@ export function Footer() {
         <div className="luxury-divider mb-8" />
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[12px] text-white/18 font-light">
-            © {new Date().getFullYear()} DubVerse AI, Inc. All rights reserved.
+            © {new Date().getFullYear()} ToneFrame, Inc. All rights reserved.
           </p>
           <p className="text-[12px] text-white/14 font-light tracking-wide">
             Built for the world's best creators.

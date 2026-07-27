@@ -34,7 +34,7 @@ export function Navbar() {
             </div>
           </div>
           <span className="font-semibold text-[15px] tracking-[-0.02em] text-white/90 group-hover:text-white transition-colors">
-            DubVerse<span className="gradient-text-gold ml-0.5">AI</span>
+            Tone<span className="gradient-text-gold ml-0.5">Frame</span>
           </span>
         </Link>
 

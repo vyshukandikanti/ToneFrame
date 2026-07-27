@@ -66,7 +66,7 @@ const rawConfig = {
   DATABASE_URL: getSecret("DATABASE_URL", "postgresql://postgres:password123@localhost:5432/dubverse"),
   REDIS_URL: getSecret("REDIS_URL", "redis://127.0.0.1:6379"),
   AWS_REGION: getSecret("AWS_REGION", "us-east-1"),
-  S3_BUCKET: getSecret("S3_BUCKET", "dubverse-bucket"),
+  S3_BUCKET: getSecret("S3_BUCKET", getSecret("S3_BUCKET_NAME", "dubverse-assets")),
   AWS_ACCESS_KEY_ID: getSecret("AWS_ACCESS_KEY_ID"),
   AWS_SECRET_ACCESS_KEY: getSecret("AWS_SECRET_ACCESS_KEY"),
   AWS_ENDPOINT_URL_S3: getSecret("AWS_ENDPOINT_URL_S3"),

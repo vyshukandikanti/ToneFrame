@@ -315,12 +315,11 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       logger("Uploading file directly to backend proxy endpoint...");
       const apiBaseUrl = import.meta.env.VITE_API_URL || "https://dubverse-backend-production.up.railway.app";
       
-      const response = await fetch(`${apiBaseUrl}/api/projects/${projectId}/videos/upload`, {
+      const response = await fetch(`${apiBaseUrl}/api/projects/${projectId}/videos/upload?fileName=${encodeURIComponent(file.name)}`, {
         method: "POST",
         body: file,
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
-          "X-File-Name": file.name,
           "Content-Type": file.type || "video/mp4",
         },
       });

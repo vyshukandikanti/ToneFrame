@@ -451,7 +451,7 @@ export async function uploadVideoDirect(
       return;
     }
 
-    const fileName = (req.headers["x-file-name"] as string) || "video.mp4";
+    const fileName = (req.query.fileName as string) || (req.headers["x-file-name"] as string) || "video.mp4";
     const contentType = (req.headers["content-type"] as string) || "video/mp4";
 
     // Validate size and extension constraints

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import express from "express";
 import {
   createProject,
   listProjects,
@@ -7,6 +8,7 @@ import {
   deleteProject,
   getUploadUrl,
   registerVideo,
+  uploadVideoDirect,
 } from "../controllers/projects";
 import { getProjectJobs } from "../controllers/jobs";
 import { requireAuth } from "../middlewares/auth";
@@ -41,5 +43,10 @@ router.put("/:projectId", renameProject);
 router.delete("/:projectId", deleteProject);
 router.post("/:projectId/upload-url", getUploadUrl);
 router.post("/:projectId/videos", registerVideo);
+router.post(
+  "/:projectId/videos/upload",
+  express.raw({ type: "*/*", limit: "100mb" }),
+  uploadVideoDirect
+);
 
 export default router;

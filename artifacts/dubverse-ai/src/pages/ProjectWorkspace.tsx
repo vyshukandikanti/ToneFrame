@@ -312,57 +312,34 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     setLocalVideo(tempVideo);
 
     try {
-      let s3Key = objectUrl;
-      try {
-        const uploadDetails = await getUploadUrlMutation.mutateAsync({
-          projectId,
-          data: {
-            fileName: file.name,
-            fileSize: file.size,
-            contentType: file.type || "video/mp4",
-          },
-        });
-        if (uploadDetails?.s3Key) {
-          s3Key = uploadDetails.s3Key;
-        }
-        if (uploadDetails?.uploadUrl) {
-          logger("Uploading file binary to S3/MinIO presigned URL...");
-          const uploadRes = await fetch(uploadDetails.uploadUrl, {
-            method: "PUT",
-            body: file,
-            headers: {
-              "Content-Type": file.type || "video/mp4",
-            },
-          });
-          if (!uploadRes.ok) {
-            throw new Error(`S3/MinIO upload failed with status ${uploadRes.status}`);
-          }
-          logger("File binary uploaded successfully to S3/MinIO.");
-        }
-        setUploadProgress(70);
-      } catch (uploadErr: any) {
-        logger("Direct upload failed:", uploadErr);
-        toast.error(`Upload failed: ${uploadErr.message || uploadErr}`);
-        setUploadProgress(null);
-        return;
-      }
-
-      await addVideoMutation.mutateAsync({
-        projectId,
-        data: {
-          fileName: file.name,
-          s3Key: s3Key,
-          durationSeconds: 60,
-          fileSize: file.size,
-          mimeType: file.type || "video/mp4",
+      logger("Uploading file directly to backend proxy endpoint...");
+      const apiBaseUrl = import.meta.env.VITE_API_URL || "https://dubverse-backend-production.up.railway.app";
+      
+      const response = await fetch(`${apiBaseUrl}/api/projects/${projectId}/videos/upload`, {
+        method: "POST",
+        body: file,
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "X-File-Name": file.name,
+          "Content-Type": file.type || "video/mp4",
         },
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
+      }
+
+      const uploadedVideo = await response.json();
+      logger("Video uploaded and registered successfully:", uploadedVideo);
 
       setUploadProgress(100);
       toast.success("Video loaded in studio!");
       refetchProject();
     } catch (err: any) {
-      console.log("Local video active, backend sync logged:", err);
+      logger("Video upload failed:", err);
+      toast.error(`Upload failed: ${err.message || err}`);
+      setLocalVideo(null); // Clear preview on upload fail
     } finally {
       setUploadProgress(null);
     }

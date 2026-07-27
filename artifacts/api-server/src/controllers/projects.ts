@@ -12,8 +12,12 @@ import {
   validateFileConstraints,
   generatePresignedUploadUrl,
   generatePresignedDownloadUrl,
+  getS3Client,
 } from "../services/s3";
 import { extractVideoMetadata } from "../services/metadata";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import path from "path";
+import crypto from "crypto";
 
 // 1. Create Project
 export async function createProject(
@@ -408,6 +412,108 @@ export async function registerVideo(
       fps: video.fps || undefined,
       codec: video.codec || undefined,
       bitrate: video.bitrate || undefined,
+      createdAt: video.createdAt.toISOString(),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// 8. Direct Video Upload (Bypasses browser CORS by proxying through backend)
+export async function uploadVideoDirect(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const projectId = req.params.projectId as string;
+
+    // Verify project ownership
+    const [project] = await db
+      .select()
+      .from(projectsTable)
+      .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, req.user.id)))
+      .limit(1);
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+
+    const fileBuffer = req.body;
+    if (!fileBuffer || !Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
+      res.status(400).json({ error: "No video file body received" });
+      return;
+    }
+
+    const fileName = (req.headers["x-file-name"] as string) || "video.mp4";
+    const contentType = (req.headers["content-type"] as string) || "video/mp4";
+
+    // Validate size and extension constraints
+    const validation = validateFileConstraints(fileName, fileBuffer.length, contentType);
+    if (!validation.valid) {
+      res.status(400).json({ error: validation.error });
+      return;
+    }
+
+    // Generate keys & upload to S3/MinIO
+    const ext = path.extname(fileName) || ".mp4";
+    const fileId = crypto.randomUUID();
+    const s3Key = `projects/${projectId}/videos/${fileId}${ext}`;
+
+    const s3Client = getS3Client();
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME || "dubverse-assets",
+        Key: s3Key,
+        Body: fileBuffer,
+        ContentType: contentType,
+      })
+    );
+
+    // Insert video into database
+    const [video] = await db
+      .insert(uploadedVideosTable)
+      .values({
+        projectId,
+        fileName,
+        s3Key,
+        durationSeconds: 60, // default placeholder
+        fileSize: fileBuffer.length,
+        resolution: "unknown",
+        mimeType: contentType,
+      })
+      .returning();
+
+    // Update project's updatedAt timestamp
+    await db
+      .update(projectsTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(projectsTable.id, projectId));
+
+    // Resolve download URL
+    let downloadUrl = s3Key;
+    try {
+      downloadUrl = await generatePresignedDownloadUrl(s3Key);
+    } catch (err) {
+      console.warn("Could not generate presigned download URL:", err);
+    }
+
+    res.status(201).json({
+      id: video.id,
+      projectId: video.projectId,
+      fileName: video.fileName,
+      s3Key: video.s3Key,
+      downloadUrl,
+      durationSeconds: video.durationSeconds,
+      fileSize: video.fileSize,
+      resolution: video.resolution || "unknown",
+      mimeType: video.mimeType,
       createdAt: video.createdAt.toISOString(),
     });
   } catch (err) {

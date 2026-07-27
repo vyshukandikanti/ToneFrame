@@ -340,8 +340,11 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
           logger("File binary uploaded successfully to S3/MinIO.");
         }
         setUploadProgress(70);
-      } catch (uploadErr) {
-        console.warn("Direct upload notice, proceeding with registration:", uploadErr);
+      } catch (uploadErr: any) {
+        logger("Direct upload failed:", uploadErr);
+        toast.error(`Upload failed: ${uploadErr.message || uploadErr}`);
+        setUploadProgress(null);
+        return;
       }
 
       await addVideoMutation.mutateAsync({

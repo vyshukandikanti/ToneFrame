@@ -31,7 +31,8 @@ import {
 import { eq, and } from "drizzle-orm";
 import { CONFIG, QUEUES, QueueType } from "../config";
 import { getQueue, updateProgress, completeJob, failJob, enqueueJob } from "../services/jobs";
-import { generatePresignedDownloadUrl, uploadTextAsset, uploadAudioBuffer } from "../services/s3";
+import { generatePresignedDownloadUrl, uploadTextAsset, uploadAudioBuffer, getS3Client } from "../services/s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { extractAudioFromVideo, generateSrt, generateVtt } from "../services/audio";
 import { getWhisperProvider } from "../services/whisper";
 import {
@@ -1096,7 +1097,12 @@ function createWorkerProcessor(stage: QueueType) {
         }));
         await db.insert(lipSyncSegmentsTable).values(segmentsWithJob);
 
-        const combinedVideoBuffer = Buffer.from("mock-binary-video-data");
+        const s3Client = getS3Client();
+        const videoObject = await s3Client.send(new GetObjectCommand({
+          Bucket: CONFIG.S3_BUCKET,
+          Key: video.s3Key,
+        }));
+        const combinedVideoBuffer = Buffer.from(await videoObject.Body!.transformToByteArray());
         const nextVersion = 1;
 
         const combinedMp4Key = `projects/${projectId}/lipsync/outputs/combined-${nextVersion}.mp4`;

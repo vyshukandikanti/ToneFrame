@@ -53,6 +53,25 @@ export function createMockWavBuffer(durationSeconds = 2, sampleRate = 16000): Bu
   return buffer;
 }
 
+// Wrap raw 16-bit PCM audio bytes in a minimal WAV container.
+export function pcmToWav(pcm: Buffer, sampleRate = 24000): Buffer {
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + pcm.length, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20); // PCM
+  header.writeUInt16LE(1, 22); // Mono channel
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28); // byte rate (mono, 16-bit)
+  header.writeUInt16LE(2, 32); // block align
+  header.writeUInt16LE(16, 34); // bits per sample
+  header.write("data", 36);
+  header.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([header, pcm]);
+}
+
 // Mapping emotion values to speech parameters
 export function getEmotionSpeechParameters(emotion: string, intensity = 0.8) {
   const norm = emotion.toLowerCase().trim();
@@ -354,6 +373,60 @@ export class OpenAISpeechProvider implements VoiceProvider {
   }
 }
 
+// 7. Google Gemini TTS Provider (free tier via Google AI Studio, no card required)
+export class GeminiTTSProvider implements VoiceProvider {
+  name = "gemini-tts";
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    const apiKey = process.env.GEMINI_TTS_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("Gemini TTS requires GEMINI_API_KEY");
+
+    const model = process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
+    const voice = options.voiceName || process.env.GEMINI_TTS_VOICE || "Kore";
+
+    logger.info(`Synthesizing via Gemini TTS (model: ${model}, voice: ${voice})`);
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: options.text }] }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
+            },
+          },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Gemini TTS failed (${res.status}): ${err}`);
+    }
+
+    const data = (await res.json()) as any;
+    const b64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!b64) throw new Error("Gemini TTS returned no audio data");
+
+    const pcm = Buffer.from(b64, "base64");
+    const sampleRate = 24000;
+    const audioBuffer = pcmToWav(pcm, sampleRate);
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, words / 2.1);
+
+    return {
+      audioBuffer,
+      sampleRate,
+      duration,
+      confidence: 0.95,
+    };
+  }
+}
+
 // Fallback Provider execution loop
 export async function synthesizeVoiceWithFallback(
   options: SynthesizeOptions
@@ -381,6 +454,9 @@ export async function synthesizeVoiceWithFallback(
         break;
       case "openai-tts":
         provider = new OpenAISpeechProvider();
+        break;
+      case "gemini-tts":
+        provider = new GeminiTTSProvider();
         break;
       case "mock":
       default:

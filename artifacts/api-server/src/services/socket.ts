@@ -1,11 +1,15 @@
 import { Server as HttpServer } from "http";
 import { Server as SocketServer, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
+import Redis from "ioredis";
 import { logger } from "../lib/logger";
+import { getRedisClient, getRedisOptions } from "./redis";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-for-dev";
+const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 
 let io: SocketServer | null = null;
+let pubsubSubscribed = false;
 
 export function initializeSocketServer(httpServer: HttpServer): SocketServer {
   io = new SocketServer(httpServer, {
@@ -59,6 +63,38 @@ export function initializeSocketServer(httpServer: HttpServer): SocketServer {
     });
   });
 
+  // Setup Redis PubSub Subscription (only on backend api-server)
+  if (!pubsubSubscribed) {
+    try {
+      const subClient = new Redis(REDIS_URL, getRedisOptions());
+      subClient.subscribe("job_updates", (err) => {
+        if (err) {
+          logger.error(err, "Failed to subscribe to Redis job_updates channel");
+        } else {
+          logger.info("Successfully subscribed to Redis job_updates channel");
+          pubsubSubscribed = true;
+        }
+      });
+
+      subClient.on("message", (channel, message) => {
+        if (channel === "job_updates") {
+          try {
+            const { projectId, event, data } = JSON.parse(message);
+            if (io) {
+              const roomName = `project:${projectId}`;
+              io.to(roomName).emit(event, data);
+              logger.debug(`Broadcasted Redis pubsub event ${event} to room ${roomName}`);
+            }
+          } catch (err) {
+            logger.error(err, "Error parsing Redis pubsub message");
+          }
+        }
+      });
+    } catch (err) {
+      logger.error(err, "Error setting up Redis PubSub socket broker");
+    }
+  }
+
   return io;
 }
 
@@ -89,12 +125,20 @@ export function broadcastJobUpdate(
     | "export:failed",
   data: any
 ): void {
-  if (!io) {
-    logger.warn(`Cannot broadcast ${event} - socket server not initialized`);
-    return;
+  // If we have local Socket.io server initialized, emit directly
+  if (io) {
+    const roomName = `project:${projectId}`;
+    io.to(roomName).emit(event, data);
+    logger.debug(`Broadcasted local event ${event} to room ${roomName}`);
   }
 
-  const roomName = `project:${projectId}`;
-  io.to(roomName).emit(event, data);
-  logger.debug(`Broadcasted ${event} to room ${roomName}`);
+  // Always publish to Redis so that other processes (worker/api-server instances) sync up
+  try {
+    const redis = getRedisClient();
+    redis.publish("job_updates", JSON.stringify({ projectId, event, data })).catch((err) => {
+      logger.error(err, "Failed to publish job update to Redis");
+    });
+  } catch (err) {
+    logger.error(err, "Redis publish failed in broadcastJobUpdate");
+  }
 }

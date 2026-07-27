@@ -22,6 +22,7 @@ import {
   useListGlossaries,
   useAddGlossaryTerm,
   useDeleteGlossaryTerm,
+  useGetProjectJobs,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -76,6 +77,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
   const { data: lipsyncAssets = [], refetch: refetchLipsync } = useGetLipSyncAssets(projectId);
   const { data: renderedAssets = [], refetch: refetchRenders } = useGetRenderedAssets(projectId);
   const { data: exportAssets = [], refetch: refetchExports } = useGetExportAssets(projectId);
+  const { data: projectJobs = [], refetch: refetchJobs } = useGetProjectJobs(projectId);
 
   // Glossary hooks
   const { data: glossaryTerms = [], refetch: refetchGlossary } = useListGlossaries(projectId);
@@ -189,6 +191,27 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     };
   }, [activeAudioTrack]);
 
+  // Sync pipeline status and progress from database jobs
+  useEffect(() => {
+    if (!projectJobs || projectJobs.length === 0) return;
+
+    const latestStatus: Record<string, string> = {};
+    const latestProgress: Record<string, number> = {};
+
+    // Sort jobs by createdAt ascending so the latest one wins/overwrites
+    const sortedJobs = [...projectJobs].sort(
+      (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    for (const job of sortedJobs) {
+      latestStatus[job.stage] = job.status;
+      latestProgress[job.stage] = job.progress || 0;
+    }
+
+    setPipelineStatus((prev) => ({ ...prev, ...latestStatus }));
+    setPipelineProgress((prev) => ({ ...prev, ...latestProgress }));
+  }, [projectJobs]);
+
   // 3. Socket.io Real-time integration
   useEffect(() => {
     const socketHost = import.meta.env.VITE_API_URL || "https://dubverse-backend-production.up.railway.app";
@@ -208,10 +231,12 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       logger("Socket job:stage_changed event:", data);
       setPipelineStatus((prev) => ({ ...prev, [data.stage]: data.status }));
       setPipelineProgress((prev) => ({ ...prev, [data.stage]: data.progress }));
+      refetchJobs();
     });
 
     socket.on("job:progress", (data: any) => {
       setPipelineProgress((prev) => ({ ...prev, [data.stage]: data.progress }));
+      refetchJobs();
     });
 
     socket.on("job:completed", (data: any) => {
@@ -225,31 +250,37 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       refetchLipsync();
       refetchRenders();
       refetchExports();
+      refetchJobs();
     });
 
     socket.on("job:failed", (data: any) => {
       setPipelineStatus((prev) => ({ ...prev, [data.stage]: "failed" }));
-      toast.error(`${data.stage} stage failed: ${data.error}`);
+      toast.error(`${data.stage} stage failed: ${data.error || data.errorMessage || "Error occurred"}`);
+      refetchJobs();
     });
 
     // Renders
     socket.on("render:progress", (data: any) => {
       setPipelineProgress((prev) => ({ ...prev, rendering: data.progress }));
+      refetchJobs();
     });
     socket.on("render:completed", () => {
       setPipelineStatus((prev) => ({ ...prev, rendering: "completed" }));
       setPipelineProgress((prev) => ({ ...prev, rendering: 100 }));
       refetchRenders();
+      refetchJobs();
     });
 
     // Exports
     socket.on("export:progress", (data: any) => {
       setPipelineProgress((prev) => ({ ...prev, export: data.progress }));
+      refetchJobs();
     });
     socket.on("export:completed", () => {
       setPipelineStatus((prev) => ({ ...prev, export: "completed" }));
       setPipelineProgress((prev) => ({ ...prev, export: 100 }));
       refetchExports();
+      refetchJobs();
     });
 
     return () => {

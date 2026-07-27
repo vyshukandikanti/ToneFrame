@@ -6,7 +6,7 @@ import express from "express";
 // 1. General Rate Limiter (max 100 requests per 15 minutes per IP)
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 10000,
   message: {
     error: "Too many requests from this IP. Please try again after 15 minutes.",
   },

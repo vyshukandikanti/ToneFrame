@@ -325,7 +325,21 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
         if (uploadDetails?.s3Key) {
           s3Key = uploadDetails.s3Key;
         }
-        setUploadProgress(50);
+        if (uploadDetails?.uploadUrl) {
+          logger("Uploading file binary to S3/MinIO presigned URL...");
+          const uploadRes = await fetch(uploadDetails.uploadUrl, {
+            method: "PUT",
+            body: file,
+            headers: {
+              "Content-Type": file.type || "video/mp4",
+            },
+          });
+          if (!uploadRes.ok) {
+            throw new Error(`S3/MinIO upload failed with status ${uploadRes.status}`);
+          }
+          logger("File binary uploaded successfully to S3/MinIO.");
+        }
+        setUploadProgress(70);
       } catch (uploadErr) {
         console.warn("Direct upload notice, proceeding with registration:", uploadErr);
       }

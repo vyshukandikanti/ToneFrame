@@ -61,10 +61,51 @@ import {
 } from "../services/rendering";
 import { broadcastJobUpdate } from "../services/socket";
 import { logger } from "../lib/logger";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 const workers: Record<string, Worker> = {};
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Concatenate per-segment TTS audio buffers into one continuous track using FFmpeg.
+// Handles mixed input formats (wav/mp3) by decoding + re-encoding to 16kHz mono PCM WAV.
+async function combineAudioSegments(buffers: Buffer[]): Promise<Buffer> {
+  if (buffers.length === 0) {
+    throw new Error("No audio segments to combine");
+  }
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "voice_combine_"));
+  try {
+    const inputPaths = buffers.map((buf, i) => {
+      const p = path.join(tempDir, `seg_${i}.audio`);
+      fs.writeFileSync(p, buf);
+      return p;
+    });
+
+    const outputPath = path.join(tempDir, "combined.wav");
+    const inputArgs = inputPaths.map((p) => `-i "${p}"`).join(" ");
+    const filterInputs = inputPaths.map((_, i) => `[${i}:a]`).join("");
+    const filter = `${filterInputs}concat=n=${inputPaths.length}:v=0:a=1[out]`;
+    const cmd = `ffmpeg -y ${inputArgs} -filter_complex "${filter}" -map "[out]" -ar 16000 -ac 1 -c:a pcm_s16le "${outputPath}"`;
+
+    logger.info(`[combineAudioSegments] Concatenating ${inputPaths.length} segment(s) via FFmpeg`);
+    await execAsync(cmd);
+
+    return fs.readFileSync(outputPath);
+  } finally {
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch (cleanupErr) {
+      logger.error(cleanupErr, "Failed to clean up temp voice-combine directory");
+    }
+  }
+}
 
 async function checkCancellation(jobId: string): Promise<boolean> {
   const [job] = await db
@@ -820,6 +861,7 @@ function createWorkerProcessor(stage: QueueType) {
 
         const ttsStart = Date.now();
         const generatedSegmentsData: any[] = [];
+        const segmentAudioBuffers: Buffer[] = [];
 
         let finalConfidenceTotal = 0;
         let finalProvider = "mock";
@@ -865,6 +907,7 @@ function createWorkerProcessor(stage: QueueType) {
 
           const segmentS3Key = `projects/${projectId}/voices/segments/version-1-${seg.id}.wav`;
           await uploadAudioBuffer(segmentS3Key, ttsResult.audioBuffer, "audio/wav");
+          segmentAudioBuffers.push(ttsResult.audioBuffer);
 
           generatedSegmentsData.push({
             translatedSegmentId: seg.id,
@@ -924,7 +967,13 @@ function createWorkerProcessor(stage: QueueType) {
         await db.insert(generatedVoiceSegmentsTable).values(segmentsToInsert);
 
         const totalDuration = generatedSegmentsData.reduce((sum, s) => sum + s.duration, 0);
-        const combinedWavBuffer = createMockWavBuffer(totalDuration, 16000);
+        let combinedWavBuffer: Buffer;
+        try {
+          combinedWavBuffer = await combineAudioSegments(segmentAudioBuffers);
+        } catch (combineErr: any) {
+          logger.error(combineErr, "Audio segment concatenation failed; falling back to silent placeholder track");
+          combinedWavBuffer = createMockWavBuffer(totalDuration, 16000);
+        }
 
         const combinedWavKey = `projects/${projectId}/voices/outputs/combined-${nextVersion}.wav`;
         const combinedMp3Key = `projects/${projectId}/voices/outputs/combined-${nextVersion}.mp3`;

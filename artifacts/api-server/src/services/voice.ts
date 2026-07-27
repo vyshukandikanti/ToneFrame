@@ -41,6 +41,15 @@ export function createMockWavBuffer(durationSeconds = 2, sampleRate = 16000): Bu
   buffer.write("data", 36);
   buffer.writeUInt32LE(numSamples * 2, 40);
 
+  // Fill with an audible low-volume tone (placeholder voice) instead of silence,
+  // so the dubbed track is audible end-to-end even without a real TTS provider.
+  const frequency = 220; // Hz
+  const amplitude = 6000; // ~18% of int16 range: clearly audible, not harsh
+  for (let i = 0; i < numSamples; i++) {
+    const sample = Math.round(Math.sin((2 * Math.PI * frequency * i) / sampleRate) * amplitude);
+    buffer.writeInt16LE(sample, 44 + i * 2);
+  }
+
   return buffer;
 }
 

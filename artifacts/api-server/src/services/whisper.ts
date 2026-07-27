@@ -114,7 +114,8 @@ export class OpenAIWhisperProvider implements WhisperProvider {
       formData.append("language", targetLang);
     }
 
-    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    const res = await fetch(`${baseUrl}/audio/transcriptions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,

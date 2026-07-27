@@ -130,6 +130,13 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
 
   const dubbedAudioUrl = voiceAssets.find((a) => a.format === "wav")?.downloadUrl || "";
 
+  // Load audio element when URL changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.load();
+    }
+  }, [dubbedAudioUrl]);
+
   // Sync video and audio tracks
   useEffect(() => {
     const video = videoRef.current;
@@ -140,6 +147,8 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       video.muted = true;
       if (audio) {
         audio.currentTime = video.currentTime;
+        audio.volume = video.volume;
+        audio.muted = false;
         if (!video.paused) {
           audio.play().catch(() => {});
         } else {
@@ -154,7 +163,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     }
   }, [activeAudioTrack, dubbedAudioUrl]);
 
-  // Video element event listeners for play, pause, seek
+  // Video element event listeners for play, pause, seek, volumechange
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -178,16 +187,25 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       }
     };
 
+    const handleVolumeChange = () => {
+      if (audioRef.current) {
+        audioRef.current.volume = video.volume;
+        audioRef.current.muted = video.muted;
+      }
+    };
+
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
     video.addEventListener("seeking", handleSeek);
     video.addEventListener("seeked", handleSeek);
+    video.addEventListener("volumechange", handleVolumeChange);
 
     return () => {
       video.removeEventListener("play", handlePlay);
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("seeking", handleSeek);
       video.removeEventListener("seeked", handleSeek);
+      video.removeEventListener("volumechange", handleVolumeChange);
     };
   }, [activeAudioTrack]);
 
@@ -636,11 +654,28 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                       </Button>
                       <Button
                         variant={activeAudioTrack === "dubbed" ? "default" : "ghost"}
-                        onClick={() => {
+                        onClick={async () => {
                           if (!dubbedAudioUrl) {
                             toast.info("Dubbed track will activate once Voice Cloning & TTS generates the audio file.");
+                            return;
                           }
                           setActiveAudioTrack("dubbed");
+                          
+                          const video = videoRef.current;
+                          const audio = audioRef.current;
+                          if (video && audio) {
+                            video.muted = true;
+                            audio.currentTime = video.currentTime;
+                            audio.volume = video.volume;
+                            audio.muted = false;
+                            if (!video.paused) {
+                              try {
+                                await audio.play();
+                              } catch (err) {
+                                console.warn("Direct audio play failed:", err);
+                              }
+                            }
+                          }
                         }}
                         className={`rounded-lg py-2 text-[12px] cursor-pointer ${activeAudioTrack === "dubbed" ? "bg-violet-600/30 text-white border border-violet-500/30" : "text-white/70 hover:text-white"}`}
                       >

@@ -163,7 +163,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     }
   }, [activeAudioTrack, dubbedAudioUrl]);
 
-  // Video element event listeners for play, pause, seek, volumechange
+  // Video element event listeners for play, pause, seek, volumechange, click
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -198,11 +198,22 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       }
     };
 
+    const handleVideoClick = () => {
+      if (activeAudioTrack === "dubbed" && audioRef.current) {
+        audioRef.current.play().then(() => {
+          if (video.paused) {
+            audioRef.current?.pause();
+          }
+        }).catch(() => {});
+      }
+    };
+
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
     video.addEventListener("seeking", handleSeek);
     video.addEventListener("seeked", handleSeek);
     video.addEventListener("volumechange", handleVolumeChange);
+    video.addEventListener("click", handleVideoClick);
 
     return () => {
       video.removeEventListener("play", handlePlay);
@@ -210,6 +221,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       video.removeEventListener("seeking", handleSeek);
       video.removeEventListener("seeked", handleSeek);
       video.removeEventListener("volumechange", handleVolumeChange);
+      video.removeEventListener("click", handleVideoClick);
     };
   }, [activeAudioTrack]);
 
@@ -625,6 +637,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                   ref={videoRef}
                   src={activeVideoUrl}
                   controls
+                  crossOrigin="anonymous"
                   className="w-full h-full object-contain"
                 />
                 {dubbedAudioUrl && (
@@ -632,6 +645,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                     ref={audioRef}
                     src={dubbedAudioUrl}
                     preload="auto"
+                    crossOrigin="anonymous"
                   />
                 )}
 

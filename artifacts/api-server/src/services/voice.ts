@@ -306,6 +306,53 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
   }
 }
 
+// 6. OpenAI-compatible TTS Provider (works with OpenAI or Groq PlayAI TTS via /audio/speech)
+export class OpenAISpeechProvider implements VoiceProvider {
+  name = "openai-tts";
+  async synthesize(options: SynthesizeOptions): Promise<VoiceProviderResult> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OpenAI-compatible TTS requires OPENAI_API_KEY");
+
+    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+    const voice = options.voiceName || process.env.OPENAI_TTS_VOICE || "alloy";
+
+    logger.info(`Synthesizing via OpenAI-compatible TTS (${baseUrl}, model: ${model}, voice: ${voice})`);
+
+    const res = await fetch(`${baseUrl}/audio/speech`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        voice,
+        input: options.text,
+        response_format: "wav",
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenAI-compatible TTS failed (${res.status}): ${err}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+
+    const words = options.text.trim().split(/\s+/).length;
+    const duration = Math.max(1.5, words / 2.1);
+
+    return {
+      audioBuffer,
+      sampleRate: 24000,
+      duration,
+      confidence: 0.96,
+    };
+  }
+}
+
 // Fallback Provider execution loop
 export async function synthesizeVoiceWithFallback(
   options: SynthesizeOptions
@@ -330,6 +377,9 @@ export async function synthesizeVoiceWithFallback(
         break;
       case "elevenlabs":
         provider = new ElevenLabsVoiceProvider();
+        break;
+      case "openai-tts":
+        provider = new OpenAISpeechProvider();
         break;
       case "mock":
       default:

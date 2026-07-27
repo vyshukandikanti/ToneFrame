@@ -190,7 +190,11 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     const handleVolumeChange = () => {
       if (audioRef.current) {
         audioRef.current.volume = video.volume;
-        audioRef.current.muted = video.muted;
+        if (activeAudioTrack === "dubbed") {
+          audioRef.current.muted = false;
+        } else {
+          audioRef.current.muted = video.muted;
+        }
       }
     };
 

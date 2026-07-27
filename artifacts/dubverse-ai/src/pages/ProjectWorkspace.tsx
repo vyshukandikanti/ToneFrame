@@ -109,6 +109,25 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  const [localVideo, setLocalVideo] = useState<any>(null);
+
+  const hasVideo = (project?.videos && project.videos.length > 0) || !!localVideo;
+  const currentVideo = localVideo || (project?.videos && project.videos.length > 0 ? project.videos[0] : null);
+
+  // Resolve active sources
+  const originalVideoUrl = currentVideo ? (currentVideo.downloadUrl || currentVideo.s3Key) : "";
+  const lipsyncedVideoUrl = lipsyncAssets.length > 0 ? lipsyncAssets[0].downloadUrl : "";
+  const renderedVideoUrl = renderedAssets.length > 0 ? renderedAssets[0].downloadUrl : "";
+
+  const activeVideoUrl =
+    activeVideoTrack === "rendered" && renderedVideoUrl
+      ? renderedVideoUrl
+      : activeVideoTrack === "lipsynced" && lipsyncedVideoUrl
+      ? lipsyncedVideoUrl
+      : originalVideoUrl;
+
+  const dubbedAudioUrl = voiceAssets.find((a) => a.format === "wav")?.downloadUrl || "";
+
   // Sync video and audio tracks
   useEffect(() => {
     const video = videoRef.current;
@@ -241,8 +260,6 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
   function logger(msg: string, ...args: any[]) {
     console.log(`[ProjectWorkspace] ${msg}`, ...args);
   }
-
-  const [localVideo, setLocalVideo] = useState<any>(null);
 
   // 4. File Upload Handler
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -480,23 +497,6 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       </div>
     );
   }
-
-  const hasVideo = (project?.videos && project.videos.length > 0) || !!localVideo;
-  const currentVideo = localVideo || (project?.videos && project.videos.length > 0 ? project.videos[0] : null);
-
-  // Resolve active sources
-  const originalVideoUrl = currentVideo ? (currentVideo.downloadUrl || currentVideo.s3Key) : "";
-  const lipsyncedVideoUrl = lipsyncAssets.length > 0 ? lipsyncAssets[0].downloadUrl : "";
-  const renderedVideoUrl = renderedAssets.length > 0 ? renderedAssets[0].downloadUrl : "";
-
-  const activeVideoUrl =
-    activeVideoTrack === "rendered" && renderedVideoUrl
-      ? renderedVideoUrl
-      : activeVideoTrack === "lipsynced" && lipsyncedVideoUrl
-      ? lipsyncedVideoUrl
-      : originalVideoUrl;
-
-  const dubbedAudioUrl = voiceAssets.find((a) => a.format === "wav")?.downloadUrl || "";
 
   return (
     <div className="min-h-screen bg-[#09090f] text-white flex flex-col">

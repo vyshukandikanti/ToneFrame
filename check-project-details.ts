@@ -2,7 +2,7 @@ import { db, processingJobsTable, voiceAssetsTable, renderedAssetsTable } from "
 import { eq } from "drizzle-orm";
 
 async function main() {
-  const pId = "8ec439d6-f44a-432f-ad07-d05b849b6d47";
+  const pId = "a1186092-c7db-402c-a056-5eedaae23261";
   
   const jobs = await db.select().from(processingJobsTable).where(eq(processingJobsTable.projectId, pId));
   console.log("JOBS:", JSON.stringify(jobs, null, 2));

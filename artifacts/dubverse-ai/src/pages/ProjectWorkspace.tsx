@@ -143,6 +143,14 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     const audio = audioRef.current;
     if (!video) return;
 
+    if (activeVideoTrack === "rendered") {
+      video.muted = false;
+      if (audio) {
+        audio.pause();
+      }
+      return;
+    }
+
     if (activeAudioTrack === "dubbed" && dubbedAudioUrl) {
       video.muted = true;
       if (audio) {
@@ -161,7 +169,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
         audio.pause();
       }
     }
-  }, [activeAudioTrack, dubbedAudioUrl]);
+  }, [activeAudioTrack, activeVideoTrack, dubbedAudioUrl]);
 
   // Video element event listeners for play, pause, seek, volumechange, click
   useEffect(() => {
@@ -169,7 +177,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     if (!video) return;
 
     const handlePlay = () => {
-      if (activeAudioTrack === "dubbed" && audioRef.current) {
+      if (activeAudioTrack === "dubbed" && activeVideoTrack !== "rendered" && audioRef.current) {
         audioRef.current.currentTime = video.currentTime;
         audioRef.current.play().catch(() => {});
       }
@@ -182,7 +190,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     };
 
     const handleSeek = () => {
-      if (audioRef.current) {
+      if (activeVideoTrack !== "rendered" && audioRef.current) {
         audioRef.current.currentTime = video.currentTime;
       }
     };
@@ -190,7 +198,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     const handleVolumeChange = () => {
       if (audioRef.current) {
         audioRef.current.volume = video.volume;
-        if (activeAudioTrack === "dubbed") {
+        if (activeAudioTrack === "dubbed" && activeVideoTrack !== "rendered") {
           audioRef.current.muted = false;
         } else {
           audioRef.current.muted = video.muted;
@@ -199,7 +207,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
     };
 
     const handleVideoClick = () => {
-      if (activeAudioTrack === "dubbed" && audioRef.current) {
+      if (activeAudioTrack === "dubbed" && activeVideoTrack !== "rendered" && audioRef.current) {
         audioRef.current.play().then(() => {
           if (video.paused) {
             audioRef.current?.pause();
@@ -223,7 +231,7 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
       video.removeEventListener("volumechange", handleVolumeChange);
       video.removeEventListener("click", handleVideoClick);
     };
-  }, [activeAudioTrack]);
+  }, [activeAudioTrack, activeVideoTrack]);
 
   // Sync pipeline status and progress from database jobs
   useEffect(() => {
@@ -682,15 +690,20 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                           const video = videoRef.current;
                           const audio = audioRef.current;
                           if (video && audio) {
-                            video.muted = true;
-                            audio.currentTime = video.currentTime;
-                            audio.volume = video.volume;
-                            audio.muted = false;
-                            if (!video.paused) {
-                              try {
-                                await audio.play();
-                              } catch (err) {
-                                console.warn("Direct audio play failed:", err);
+                            if (activeVideoTrack === "rendered") {
+                              video.muted = false;
+                              audio.pause();
+                            } else {
+                              video.muted = true;
+                              audio.currentTime = video.currentTime;
+                              audio.volume = video.volume;
+                              audio.muted = false;
+                              if (!video.paused) {
+                                try {
+                                  await audio.play();
+                                } catch (err) {
+                                  console.warn("Direct audio play failed:", err);
+                                }
                               }
                             }
                           }
@@ -729,8 +742,13 @@ export default function ProjectWorkspace({ params }: { params: { projectId: stri
                         onClick={() => {
                           if (renderedAssets.length === 0) {
                             toast.info("Rendered track will activate once Video Rendering completes.");
+                            return;
                           }
                           setActiveVideoTrack("rendered");
+                          const video = videoRef.current;
+                          const audio = audioRef.current;
+                          if (video) video.muted = false;
+                          if (audio) audio.pause();
                         }}
                         className={`rounded-lg py-1 px-2 text-[10px] cursor-pointer ${activeVideoTrack === "rendered" ? "bg-violet-600/30 text-white border border-violet-500/30" : "text-white/70"}`}
                       >

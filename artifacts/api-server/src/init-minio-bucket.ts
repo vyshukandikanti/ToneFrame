@@ -48,25 +48,6 @@ async function main() {
     }));
     console.log("Public read policy ensured on bucket.");
 
-    // Set CORS configuration
-    const corsConfiguration = {
-      CORSRules: [
-        {
-          AllowedHeaders: ["*"],
-          AllowedMethods: ["PUT", "GET", "POST", "HEAD"],
-          AllowedOrigins: ["*"],
-          ExposeHeaders: ["ETag"],
-          MaxAgeSeconds: 3000,
-        },
-      ],
-    };
-
-    await s3.send(new PutBucketCorsCommand({
-      Bucket: bucketName,
-      CORSConfiguration: corsConfiguration,
-    }));
-    console.log("CORS configuration ensured on bucket.");
-
   } catch (error) {
     console.error("Error initializing MinIO bucket:", error);
     process.exit(1);

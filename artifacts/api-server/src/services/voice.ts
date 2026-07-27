@@ -149,12 +149,13 @@ export class FishSpeechProvider implements VoiceProvider {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        model: process.env.FISH_TTS_MODEL || "speech-1.6",
       },
       body: JSON.stringify({
         text: options.text,
         chunk_length: 200,
         format: "wav",
-        reference_id: options.voiceName || undefined,
+        reference_id: options.voiceName || process.env.FISH_TTS_REFERENCE_ID || undefined,
         prosody: {
           speed: options.speed || 1.0,
         },

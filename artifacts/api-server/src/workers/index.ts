@@ -1231,11 +1231,32 @@ function createWorkerProcessor(stage: QueueType) {
         const hasSubtitles = !!bullJob.data.hasSubtitles;
         const hasWatermark = !!bullJob.data.hasWatermark;
 
+        // 2b. Resolve the CURRENT dubbed audio track from the DB instead of a hard-coded
+        // version. Voice generation writes combined-{N}.wav (N increments on each re-run),
+        // so hard-coding combined-1.wav would mux stale/silent audio after a re-run.
+        let audioKey = `projects/${projectId}/voices/outputs/combined-1.wav`;
+        const [currentVoiceJob] = await db
+          .select({ id: voiceGenerationJobsTable.id })
+          .from(voiceGenerationJobsTable)
+          .where(and(eq(voiceGenerationJobsTable.projectId, projectId), eq(voiceGenerationJobsTable.isCurrent, true)))
+          .limit(1);
+        if (currentVoiceJob) {
+          const [voiceWavAsset] = await db
+            .select({ s3Key: voiceAssetsTable.s3Key })
+            .from(voiceAssetsTable)
+            .where(and(eq(voiceAssetsTable.voiceJobId, currentVoiceJob.id), eq(voiceAssetsTable.format, "wav")))
+            .limit(1);
+          if (voiceWavAsset?.s3Key) {
+            audioKey = voiceWavAsset.s3Key;
+          }
+        }
+        logger.info(`[Render] Using dubbed audio track: ${audioKey}`);
+
         // 3. Run default FFmpeg renderer helper
         const renderStart = Date.now();
         const renderResult = await renderVideoWithFallback({
           lipSyncVideoKey: `projects/${projectId}/lipsync/outputs/combined-1.mp4`,
-          audioKey: `projects/${projectId}/voices/outputs/combined-1.wav`,
+          audioKey,
           subtitlesKey: hasSubtitles ? `projects/${projectId}/transcripts/version-1.vtt` : undefined,
           hasWatermark,
           resolution,
